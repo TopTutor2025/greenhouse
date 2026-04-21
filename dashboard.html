@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Greenhouse</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+<div class="dash-page">
+
+  <!-- Overlay mobile per chiudere la sidebar -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+  <!-- SIDEBAR -->
+  <aside class="dash-sidebar" id="sidebar">
+    <a href="index.html" class="dash-sidebar-logo">
+      <div class="logo-icon" style="background:#111"><svg viewBox="0 0 24 24" fill="none" style="width:20px;height:20px"><polygon points="12,2 1,11 23,11" fill="#5a9e6f"/><rect x="3" y="11" width="18" height="11" rx="1" fill="#5a9e6f"/><rect x="9.5" y="15" width="5" height="7" rx="0.8" fill="#111"/><rect x="4" y="13" width="4" height="4" rx="0.6" fill="#111"/><rect x="16" y="13" width="4" height="4" rx="0.6" fill="#111"/></svg></div>
+      <span class="logo-text">Green<span>house</span></span>
+    </a>
+    <nav class="dash-nav" id="dash-nav">
+      <div class="dash-nav-section">Menu</div>
+      <button class="dash-nav-item active" data-page="home" onclick="showPage('home')">
+        <span class="nav-icon">🏠</span> Dashboard
+      </button>
+      <button class="dash-nav-item" data-page="sedi" onclick="showPage('sedi')" id="nav-sedi">
+        <span class="nav-icon">🏢</span> Le mie Sedi
+      </button>
+      <button class="dash-nav-item" data-page="piano" onclick="showPage('piano')" id="nav-piano">
+        <span class="nav-icon">✅</span> Piano di Manutenzione
+      </button>
+      <div class="dash-nav-section">Account</div>
+      <button class="dash-nav-item" data-page="profilo" onclick="showPage('profilo')" id="nav-profilo">
+        <span class="nav-icon">👤</span> Profilo
+      </button>
+      <button class="dash-nav-item" onclick="assistenza()">
+        <span class="nav-icon">💬</span> Assistenza
+      </button>
+    </nav>
+    <div class="dash-sidebar-footer">
+      <button class="dash-nav-item" onclick="doLogout()" style="color:var(--danger);width:100%">
+        <span class="nav-icon">🚪</span> Esci
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="dash-main">
+    <!-- TOPBAR -->
+    <header class="dash-topbar" id="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="btn btn-ghost btn-icon" id="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+        <h1 class="dash-topbar-title" id="page-title">Dashboard</h1>
+      </div>
+      <div class="dash-topbar-right">
+        <button class="dash-help-btn" onclick="startTutorial()" title="Avvia Tutorial">?</button>
+        <div style="position:relative">
+          <div class="user-avatar" id="user-avatar" onclick="toggleUserMenu()">A</div>
+          <div class="user-avatar-menu" id="user-menu">
+            <div class="user-menu-info">
+              <div class="user-menu-name" id="menu-company">—</div>
+              <div class="user-menu-email" id="menu-email">—</div>
+            </div>
+            <button class="user-menu-item" onclick="showPage('profilo');toggleUserMenu()">👤 Profilo</button>
+            <hr class="user-menu-sep">
+            <button class="user-menu-item" onclick="doLogout()" style="color:var(--danger)">🚪 Esci</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="dash-content">
+
+      <!-- ── HOME PAGE ── -->
+      <div class="dash-page-view active" id="page-home">
+        <div class="stats-row" id="stats-row"></div>
+        <div id="plan-banner-wrap"></div>
+        <div class="home-grid" id="home-grid">
+          <div class="card" id="recent-sedi-card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+              <h3 style="font-size:16px;font-weight:700">Le mie Sedi</h3>
+              <button class="btn btn-sm btn-outline" onclick="showPage('sedi')">Vedi tutte</button>
+            </div>
+            <div id="home-sedi-list"></div>
+          </div>
+          <div class="card" id="upcoming-card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+              <h3 style="font-size:16px;font-weight:700">Prossimi Interventi</h3>
+            </div>
+            <div id="home-records-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SEDI PAGE ── -->
+      <div class="dash-page-view" id="page-sedi">
+        <div class="properties-grid" id="sedi-grid"></div>
+      </div>
+
+      <!-- ── PROPERTY DETAIL ── -->
+      <div class="dash-page-view" id="page-property">
+        <button class="back-btn" onclick="showPage('sedi')">🏠 Torna alle sedi</button>
+        <div class="property-detail-header" id="prop-header">
+          <div>
+            <h2 id="prop-title">—</h2>
+            <p id="prop-subtitle">—</p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="openEditProperty()">✏️ Modifica</button>
+            <button class="btn btn-sm" style="background:rgba(239,68,68,.8);color:#fff;border-color:transparent" onclick="confirmDeleteProperty()">🗑 Elimina sede</button>
+          </div>
+        </div>
+        <div class="detail-tabs">
+          <button class="detail-tab active" data-tab="documenti" onclick="switchTab('documenti')">📁 Documenti</button>
+          <button class="detail-tab" data-tab="interventi" onclick="switchTab('interventi')">📋 Interventi</button>
+        </div>
+        <!-- Documenti tab -->
+        <div class="tab-pane active" id="tab-documenti">
+          <div class="doc-upload-area" id="upload-area">
+            <div class="upload-icon">📎</div>
+            <p><strong>Trascina qui i file</strong> o clicca per selezionare</p>
+            <p style="font-size:12px;margin-top:4px">Supporta JPG, PNG, PDF — Max 10MB per file</p>
+            <input type="file" id="file-input" multiple accept=".jpg,.jpeg,.png,.pdf" style="display:none">
+          </div>
+          <div class="docs-grid" id="docs-grid"></div>
+        </div>
+        <!-- Interventi tab -->
+        <div class="tab-pane" id="tab-interventi">
+          <div class="records-filter">
+            <button class="filter-btn active" data-filter="tutti" onclick="filterRecords('tutti')">Tutti</button>
+            <button class="filter-btn" data-filter="futuro" onclick="filterRecords('futuro')">Futuri</button>
+            <button class="filter-btn" data-filter="completato" onclick="filterRecords('completato')">Completati</button>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="records-table" id="records-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Tipo</th>
+                  <th>Lavoro</th>
+                  <th>Stato</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="records-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty-state hidden" id="records-empty">
+            <div class="empty-icon">📋</div>
+            <h3>Nessun intervento</h3>
+            <p>Gli interventi pianificati dal team Greenhouse appariranno qui.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PIANO PAGE ── -->
+      <div class="dash-page-view" id="page-piano">
+        <div id="piano-content"></div>
+      </div>
+
+      <!-- ── PROFILO PAGE ── -->
+      <div class="dash-page-view" id="page-profilo">
+        <div class="profile-header" id="profile-header-wrap"></div>
+        <div class="card mt-4">
+          <h3 style="font-size:16px;font-weight:700;margin-bottom:20px">Modifica Profilo</h3>
+          <form id="profile-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Nome referente</label>
+                <input type="text" id="p-nome" class="form-control">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Cognome referente</label>
+                <input type="text" id="p-cognome" class="form-control">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" id="p-company-label">Ragione sociale</label>
+              <input type="text" id="p-company" class="form-control">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" id="p-email" class="form-control">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Telefono</label>
+                <input type="tel" id="p-phone" class="form-control">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Salva modifiche</button>
+          </form>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- MODAL: Add/Edit Sede -->
+<div class="modal-overlay" id="modal-sede">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modal-sede-title">Aggiungi Sede</h3>
+      <button class="modal-close" onclick="closeModal('modal-sede')">✕</button>
+    </div>
+    <form id="form-sede">
+      <div class="form-group">
+        <label class="form-label">Indirizzo *</label>
+        <input type="text" id="sede-address" class="form-control" placeholder="Via Roma 1" required>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Città *</label>
+          <input type="text" id="sede-city" class="form-control" placeholder="Milano" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Provincia *</label>
+          <input type="text" id="sede-province" class="form-control" placeholder="MI" required maxlength="2">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('modal-sede')">Annulla</button>
+        <button type="submit" class="btn btn-primary" id="sede-submit-btn">Aggiungi Sede</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: View Record -->
+<div class="modal-overlay" id="modal-record">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">Dettaglio Intervento</h3>
+      <button class="modal-close" onclick="closeModal('modal-record')">✕</button>
+    </div>
+    <div id="modal-record-content"></div>
+  </div>
+</div>
+
+<!-- MODAL: View Document -->
+<div class="modal-overlay" id="modal-doc">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 class="modal-title" id="doc-modal-title">Documento</h3>
+      <button class="modal-close" onclick="closeModal('modal-doc')">✕</button>
+    </div>
+    <div id="doc-preview-content" style="text-align:center"></div>
+  </div>
+</div>
+
+<!-- CONFIRM DIALOG -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-icon" id="confirm-icon">⚠️</div>
+    <h3 id="confirm-title">Sei sicuro?</h3>
+    <p id="confirm-msg">Questa azione non può essere annullata.</p>
+    <div class="confirm-actions">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Annulla</button>
+      <button class="btn btn-danger" id="confirm-ok-btn">Elimina</button>
+    </div>
+  </div>
+</div>
+
+<!-- ASSISTENZA MODAL -->
+<div class="modal-overlay" id="modal-assistenza">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">💬 Assistenza 7/7</h3>
+      <button class="modal-close" onclick="closeModal('modal-assistenza')">✕</button>
+    </div>
+    <div style="text-align:center;padding:10px 0 20px">
+      <div style="font-size:48px;margin-bottom:14px">🌿</div>
+      <p style="color:var(--g600);margin-bottom:24px">Il nostro team è disponibile tutti i giorni della settimana per assisterti.</p>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <a href="tel:+393520835764" class="btn btn-primary" style="justify-content:center">📞 Chiamaci: +39 352 083 5764</a>
+        <a href="mailto:greenhouse.srls.ad@gmail.com" class="btn btn-outline" style="justify-content:center">✉️ greenhouse.srls.ad@gmail.com</a>
+      </div>
+      <p class="text-muted text-sm mt-4">Orari: Lun–Dom 8:00–20:00</p>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

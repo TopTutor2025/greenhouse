@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registrati — Greenhouse</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/landing.css">
+  <style>
+    .auth-card { max-width: 520px; }
+    .step-indicator { display:flex; align-items:center; gap:0; margin-bottom:28px; }
+    .step { display:flex; align-items:center; gap:8px; flex:1; }
+    .step-circle { width:28px; height:28px; border-radius:50%; border:2px solid var(--g200); background:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--g400); flex-shrink:0; transition:var(--tr); }
+    .step.active .step-circle { border-color:var(--primary); background:var(--primary); color:#fff; }
+    .step.done .step-circle { border-color:var(--primary); background:var(--primary); color:#fff; }
+    .step-label { font-size:12px; font-weight:600; color:var(--g400); }
+    .step.active .step-label { color:var(--primary); }
+    .step-line { flex:1; height:2px; background:var(--g200); margin:0 8px; transition:var(--tr); }
+    .step-line.done { background:var(--primary); }
+  </style>
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <a href="index.html" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none">
+        <div style="width:44px;height:44px;background:#111;border-radius:12px;display:flex;align-items:center;justify-content:center">
+          <svg viewBox="0 0 24 24" fill="none" style="width:26px;height:26px"><polygon points="12,2 1,11 23,11" fill="#5a9e6f"/><rect x="3" y="11" width="18" height="11" rx="1" fill="#5a9e6f"/><rect x="9.5" y="15" width="5" height="7" rx="0.8" fill="#111"/><rect x="4" y="13" width="4" height="4" rx="0.6" fill="#111"/><rect x="16" y="13" width="4" height="4" rx="0.6" fill="#111"/></svg>
+        </div>
+        <span style="font-size:22px;font-weight:800;color:var(--g800)">Green<span style="color:var(--primary)">house</span></span>
+      </a>
+    </div>
+    <h1 class="auth-title">Crea il tuo account</h1>
+    <p class="auth-sub">Scegli il tipo di account e inizia a gestire il tuo verde</p>
+
+    <!-- Type Tabs -->
+    <div class="auth-tabs" id="type-tabs">
+      <button class="auth-tab active" data-type="azienda" onclick="selectType('azienda')"><span>🏢</span><span>Azienda</span></button>
+      <button class="auth-tab" data-type="organizzazione" onclick="selectType('organizzazione')"><span>🏛️</span><span>Organizzazione</span></button>
+    </div>
+
+    <!-- Error banner -->
+    <div id="reg-error" class="hidden" style="background:#fee2e2;border:1px solid #fca5a5;border-radius:var(--r-sm);padding:12px 14px;font-size:14px;color:#991b1b;margin-bottom:18px;display:flex;align-items:center;gap:8px">
+      <span>⚠️</span><span id="reg-error-text"></span>
+    </div>
+
+    <form id="reg-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nome referente *</label>
+          <input type="text" id="reg-nome" class="form-control" placeholder="Mario" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cognome referente *</label>
+          <input type="text" id="reg-cognome" class="form-control" placeholder="Rossi" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" id="company-label">Ragione sociale azienda *</label>
+        <input type="text" id="reg-company" class="form-control" placeholder="Rossi S.r.l." required>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Email *</label>
+          <input type="email" id="reg-email" class="form-control" placeholder="mario@azienda.it" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Telefono *</label>
+          <input type="tel" id="reg-phone" class="form-control" placeholder="+39 333 1234567" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Password *</label>
+        <div class="password-toggle">
+          <input type="password" id="reg-password" class="form-control" placeholder="Minimo 8 caratteri" required minlength="8" style="padding-right:44px">
+          <button type="button" class="toggle-btn" id="toggle-reg-pwd">👁️</button>
+        </div>
+        <div class="form-hint">Almeno 8 caratteri, una lettera maiuscola e un numero</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Conferma password *</label>
+        <input type="password" id="reg-password2" class="form-control" placeholder="Ripeti la password" required>
+        <div class="form-error" id="pwd-match-err">Le password non coincidono</div>
+      </div>
+
+      <div class="form-group mt-4">
+        <label class="auth-checkbox">
+          <input type="checkbox" id="reg-terms" required>
+          <span>Dichiaro di avere la <strong>maggiore età</strong> e di accettare i <a href="termini.html" target="_blank">Termini e Condizioni</a>, la <a href="privacy.html" target="_blank">Privacy Policy</a> e la <a href="cookie.html" target="_blank">Cookie Policy</a> di Greenhouse *</span>
+        </label>
+        <div class="form-error" id="terms-err">Devi accettare i termini per continuare</div>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-full" style="justify-content:center;margin-top:8px" id="reg-btn">
+        Crea Account →
+      </button>
+    </form>
+
+    <div style="text-align:center;margin-top:20px;font-size:14px;color:var(--g600)">
+      Hai già un account?
+      <a href="login.html" style="color:var(--primary);font-weight:600;text-decoration:none"> Accedi</a>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script>
+// Redirect if already logged in
+(async () => {
+  const session = await Auth.getSession();
+  if (session) window.location.href = 'dashboard.html';
+})();
+
+let currentType = 'azienda';
+
+function selectType(type) {
+  currentType = type;
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.type === type));
+  const label = document.getElementById('company-label');
+  const input = document.getElementById('reg-company');
+  if (type === 'azienda') {
+    label.textContent = 'Ragione sociale azienda *';
+    input.placeholder = 'Rossi S.r.l.';
+  } else {
+    label.textContent = 'Nome organizzazione *';
+    input.placeholder = 'Associazione Verde Milano';
+  }
+}
+
+document.getElementById('toggle-reg-pwd').addEventListener('click', function() {
+  const inp = document.getElementById('reg-password');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  this.textContent = inp.type === 'password' ? '👁️' : '🙈';
+});
+
+document.getElementById('reg-password2').addEventListener('input', function() {
+  const pwd = document.getElementById('reg-password').value;
+  const err = document.getElementById('pwd-match-err');
+  if (this.value && this.value !== pwd) err.classList.add('visible');
+  else err.classList.remove('visible');
+});
+
+document.getElementById('reg-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const nome      = document.getElementById('reg-nome').value.trim();
+  const cognome   = document.getElementById('reg-cognome').value.trim();
+  const company   = document.getElementById('reg-company').value.trim();
+  const email     = document.getElementById('reg-email').value.trim();
+  const phone     = document.getElementById('reg-phone').value.trim();
+  const pwd       = document.getElementById('reg-password').value;
+  const pwd2      = document.getElementById('reg-password2').value;
+  const terms     = document.getElementById('reg-terms').checked;
+  const errBanner = document.getElementById('reg-error');
+  const errText   = document.getElementById('reg-error-text');
+
+  errBanner.classList.add('hidden');
+  document.getElementById('terms-err').classList.remove('visible');
+
+  if (pwd !== pwd2) { document.getElementById('pwd-match-err').classList.add('visible'); return; }
+  if (!terms)       { document.getElementById('terms-err').classList.add('visible'); return; }
+
+  const btn = document.getElementById('reg-btn');
+  btn.disabled = true; btn.textContent = 'Creazione account...';
+
+  const res = await Auth.register({ type: currentType, nome, cognome, companyName: company, email, phone, password: pwd });
+  if (res.success) {
+    showToast('Account creato con successo!', 'success');
+    setTimeout(() => window.location.href = 'dashboard.html', 700);
+  } else {
+    errText.textContent = res.error || 'Errore durante la registrazione';
+    errBanner.classList.remove('hidden');
+    btn.disabled = false; btn.textContent = 'Crea Account →';
+  }
+});
+</script>
+<script src="js/cookie-banner.js"></script>
+</body>
+</html>

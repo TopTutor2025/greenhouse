@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Greenhouse</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="admin-header-bar" id="admin-topbar">
+  <div class="admin-header-logo">
+    <div class="logo-icon" style="background:#111"><svg viewBox="0 0 24 24" fill="none" style="width:20px;height:20px"><polygon points="12,2 1,11 23,11" fill="#5a9e6f"/><rect x="3" y="11" width="18" height="11" rx="1" fill="#5a9e6f"/><rect x="9.5" y="15" width="5" height="7" rx="0.8" fill="#111"/><rect x="4" y="13" width="4" height="4" rx="0.6" fill="#111"/><rect x="16" y="13" width="4" height="4" rx="0.6" fill="#111"/></svg></div>
+    <span>Greenhouse</span>
+    <span class="admin-pill admin-pill-desktop" style="margin-left:10px">ADMIN</span>
+  </div>
+  <div class="admin-header-right">
+    <button class="admin-help-btn" onclick="startAdminTutorial()" title="Avvia Tutorial">?</button>
+    <button class="btn btn-sm admin-logout" onclick="doAdminLogout()"><span class="admin-logout-text">🚪 Esci</span><span class="admin-logout-icon" style="display:none">🚪</span></button>
+    <button class="admin-hamburger" id="admin-hamburger" onclick="toggleAdminSidebar()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<div class="admin-page">
+  <!-- Overlay mobile -->
+  <div class="admin-sidebar-overlay" id="admin-sidebar-overlay" onclick="toggleAdminSidebar()"></div>
+
+  <!-- SIDEBAR -->
+  <aside class="admin-sidebar" id="admin-sidebar">
+    <nav class="admin-nav">
+      <button class="admin-nav-item active" data-sec="dashboard" onclick="showSection('dashboard')">
+        <span class="nav-icon">📊</span> Dashboard
+      </button>
+      <button class="admin-nav-item" data-sec="users" onclick="showSection('users')">
+        <span class="nav-icon">👥</span> Utenti
+      </button>
+      <button class="admin-nav-item" data-sec="quotes" onclick="showSection('quotes')">
+        <span class="nav-icon">📋</span> Preventivi
+        <span class="quotes-badge hidden" id="quotes-nav-badge"></span>
+      </button>
+      <button class="admin-nav-item" data-sec="suppliers" onclick="showSection('suppliers')">
+        <span class="nav-icon">🏭</span> Fornitori
+      </button>
+      <button class="admin-nav-item" data-sec="collaboratori" onclick="showSection('collaboratori')">
+        <span class="nav-icon">👷</span> Collaboratori
+      </button>
+      <button class="admin-nav-item" data-sec="preventivatore" onclick="showSection('preventivatore')">
+        <span class="nav-icon">📄</span> Preventivatore
+      </button>
+      <button class="admin-nav-item" data-sec="fatturazione" onclick="showSection('fatturazione')">
+        <span class="nav-icon">🧾</span> Fatturazione
+      </button>
+      <button class="admin-nav-item" data-sec="documentazione" onclick="showSection('documentazione')">
+        <span class="nav-icon">📁</span> Documentazione
+      </button>
+    </nav>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="admin-main">
+
+    <!-- ── DASHBOARD SECTION ── -->
+    <div class="admin-section active" id="sec-dashboard">
+      <h2 style="font-size:22px;font-weight:800;margin-bottom:22px" id="sec-dash-title">Panoramica</h2>
+      <div class="admin-stats" id="admin-stats-row"></div>
+      <div class="admin-dash-grid">
+        <div class="card">
+          <h3 style="font-size:15px;font-weight:700;margin-bottom:14px">Ultimi utenti registrati</h3>
+          <div id="recent-users-list"></div>
+        </div>
+        <div class="card">
+          <h3 style="font-size:15px;font-weight:700;margin-bottom:14px">Piani di manutenzione</h3>
+          <div id="plans-summary"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:22px">
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:14px">📅 Interventi futuri</h3>
+        <div id="upcoming-records-list"></div>
+      </div>
+    </div>
+
+    <!-- ── COLLABORATORI SECTION ── -->
+    <div class="admin-section" id="sec-collaboratori">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <h2 style="font-size:22px;font-weight:800">Collaboratori</h2>
+        <button class="btn btn-primary" onclick="openAddCollaboratore()">+ Aggiungi Collaboratore</button>
+      </div>
+      <div class="users-toolbar">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" id="collab-search" placeholder="Cerca per nome o città..." oninput="filterCollaboratori()">
+        </div>
+        <select class="filter-select" id="collab-role-filter" onchange="filterCollaboratori()">
+          <option value="">Tutti i ruoli</option>
+          <option value="Giardiniere">Giardiniere</option>
+          <option value="Potatore">Potatore</option>
+          <option value="Responsabile di zona">Responsabile di zona</option>
+          <option value="Tecnico irrigazione">Tecnico irrigazione</option>
+          <option value="Autista">Autista</option>
+          <option value="Operaio generico">Operaio generico</option>
+          <option value="Altro">Altro</option>
+        </select>
+      </div>
+      <div class="supplier-grid" id="collab-grid"></div>
+      <div class="empty-state hidden" id="collab-empty">
+        <div class="empty-icon">👷</div>
+        <h3>Nessun collaboratore</h3>
+        <p>Aggiungi il tuo primo collaboratore per iniziare.</p>
+      </div>
+    </div>
+
+    <!-- ── SUPPLIERS SECTION ── -->
+    <div class="admin-section" id="sec-suppliers">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <h2 style="font-size:22px;font-weight:800">Fornitori</h2>
+        <button class="btn btn-primary" onclick="openAddSupplier()">+ Aggiungi Fornitore</button>
+      </div>
+      <div class="users-toolbar">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" id="supplier-search" placeholder="Cerca per nome o città..." oninput="filterSuppliers()">
+        </div>
+        <select class="filter-select" id="supplier-type-filter" onchange="filterSuppliers()">
+          <option value="">Tutti i tipi</option>
+          <option value="Attrezzature">Attrezzature</option>
+          <option value="Fertilizzanti e prodotti">Fertilizzanti e prodotti</option>
+          <option value="Trasporti e logistica">Trasporti e logistica</option>
+          <option value="Subappalto lavori">Subappalto lavori</option>
+          <option value="Materiali e forniture">Materiali e forniture</option>
+          <option value="Irrigazione">Irrigazione</option>
+          <option value="Altro">Altro</option>
+        </select>
+      </div>
+      <div class="supplier-grid" id="supplier-grid"></div>
+      <div class="empty-state hidden" id="suppliers-empty">
+        <div class="empty-icon">🏭</div>
+        <h3>Nessun fornitore</h3>
+        <p>Aggiungi il tuo primo fornitore per iniziare.</p>
+      </div>
+    </div>
+
+    <!-- ── QUOTES SECTION ── -->
+    <div class="admin-section" id="sec-quotes">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <h2 style="font-size:22px;font-weight:800">Richieste Preventivo</h2>
+      </div>
+      <div class="users-toolbar">
+        <select class="filter-select" id="quote-status-filter" onchange="filterQuotes()" style="min-width:160px">
+          <option value="">Tutti gli stati</option>
+          <option value="in_attesa">In attesa</option>
+          <option value="completato">Completato</option>
+        </select>
+      </div>
+      <div class="users-table-wrap">
+        <table class="users-table" id="quotes-table">
+          <thead><tr>
+            <th>Richiedente</th>
+            <th>Azienda</th>
+            <th>Telefono</th>
+            <th>Città</th>
+            <th>Data</th>
+            <th>Stato</th>
+            <th>Azioni</th>
+          </tr></thead>
+          <tbody id="quotes-tbody"></tbody>
+        </table>
+      </div>
+      <div id="quotes-cards" class="users-cards"></div>
+      <div class="empty-state hidden" id="quotes-empty">
+        <div class="empty-icon">📋</div>
+        <h3>Nessuna richiesta</h3>
+        <p>Le richieste di preventivo compilate dalla landing page appariranno qui.</p>
+      </div>
+    </div>
+
+    <!-- ── PREVENTIVATORE SECTION ── -->
+    <div class="admin-section" id="sec-preventivatore">
+
+      <!-- List view -->
+      <div id="prev-list-view">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+          <h2 style="font-size:22px;font-weight:800">Preventivi</h2>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" onclick="openSettings()">⚙️ Impostazioni</button>
+            <button class="btn btn-outline btn-sm" onclick="openListino()">📋 Listino Prezzi</button>
+            <button class="btn btn-primary" onclick="openNewPreventivo()">+ Nuovo Preventivo</button>
+          </div>
+        </div>
+        <div class="users-toolbar" style="margin-bottom:18px">
+          <select class="filter-select" id="prev-status-filter" onchange="filterPreventivi()" style="min-width:160px">
+            <option value="">Tutti gli stati</option>
+            <option value="bozza">Bozza</option>
+            <option value="inviato">Inviato</option>
+            <option value="accettato">Accettato</option>
+            <option value="rifiutato">Rifiutato</option>
+          </select>
+        </div>
+        <div class="users-table-wrap">
+          <table class="users-table" id="prev-table">
+            <thead><tr>
+              <th>N°</th><th>Cliente</th><th>Azienda</th><th>Data</th><th>Totale</th><th>Stato</th><th>Azioni</th>
+            </tr></thead>
+            <tbody id="prev-tbody"></tbody>
+          </table>
+        </div>
+        <div id="prev-cards" class="users-cards"></div>
+        <div class="empty-state hidden" id="prev-empty">
+          <div class="empty-icon">📄</div>
+          <h3>Nessun preventivo</h3>
+          <p>Crea il tuo primo preventivo con il pulsante "Nuovo Preventivo".</p>
+        </div>
+      </div>
+
+      <!-- Create/Edit view -->
+      <div id="prev-form-view" class="hidden">
+        <button class="back-btn" onclick="backToPreventivi()">← Torna ai preventivi</button>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+          <h2 style="font-size:22px;font-weight:800" id="prev-form-title">Nuovo Preventivo</h2>
+          <button class="btn btn-outline btn-sm" onclick="openListino()">📋 Listino Prezzi</button>
+        </div>
+
+        <!-- Cliente -->
+        <div class="card prev-card-section">
+          <h3 class="prev-section-title">🏢 Dati Cliente</h3>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Nome referente *</label><input type="text" id="pv-nome" class="form-control" placeholder="Mario"></div>
+            <div class="form-group"><label class="form-label">Azienda / Organizzazione *</label><input type="text" id="pv-azienda" class="form-control" placeholder="Azienda S.r.l."></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Email</label><input type="email" id="pv-email" class="form-control" placeholder="info@azienda.it"></div>
+            <div class="form-group"><label class="form-label">Telefono</label><input type="tel" id="pv-telefono" class="form-control" placeholder="+39 333 1234567"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="flex:2"><label class="form-label">Indirizzo</label><input type="text" id="pv-indirizzo" class="form-control" placeholder="Via Roma 1"></div>
+            <div class="form-group"><label class="form-label">Città</label><input type="text" id="pv-citta" class="form-control" placeholder="Milano"></div>
+            <div class="form-group" style="flex:0.5"><label class="form-label">Prov.</label><input type="text" id="pv-provincia" class="form-control" maxlength="2" placeholder="MI"></div>
+          </div>
+        </div>
+
+        <!-- Voci -->
+        <div class="card prev-card-section">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <h3 class="prev-section-title" style="margin:0">📋 Voci di Preventivo</h3>
+            <button class="btn btn-sm btn-primary" type="button" onclick="addVoce()">+ Aggiungi voce</button>
+          </div>
+          <datalist id="dl-listino"></datalist>
+          <div class="prev-voci-wrap">
+            <table class="prev-voci-table">
+              <thead><tr>
+                <th style="min-width:220px">Descrizione</th>
+                <th style="width:90px">Categoria</th>
+                <th style="width:70px">U.M.</th>
+                <th style="width:80px">Quantità</th>
+                <th style="width:110px">Prezzo unit.</th>
+                <th style="width:110px">Totale</th>
+                <th style="width:40px"></th>
+              </tr></thead>
+              <tbody id="prev-voci-tbody"></tbody>
+            </table>
+          </div>
+          <div id="prev-voci-empty" class="prev-voci-empty">Nessuna voce aggiunta. Clicca "+ Aggiungi voce" per iniziare.</div>
+        </div>
+
+        <!-- Note + Totali -->
+        <div class="prev-bottom-grid">
+          <div class="card prev-card-section">
+            <h3 class="prev-section-title">📝 Note</h3>
+            <textarea id="pv-note" class="form-control" rows="4" placeholder="Note per il cliente, condizioni, scadenza offerta..."></textarea>
+          </div>
+          <div class="card prev-card-section prev-totali">
+            <h3 class="prev-section-title">💰 Riepilogo</h3>
+            <!-- Inputs interni -->
+            <div class="prev-totali-row prev-magg-input-row" title="Solo uso interno — non appare nel PDF">
+              <span style="color:var(--warning-d);font-weight:600;font-size:12px">🔒 Maggiorazione %</span>
+              <input type="number" id="pv-magg" class="form-control" style="width:80px;text-align:right;font-size:13px" min="0" max="200" step="0.1" value="0" oninput="recalcTotali()" placeholder="0">
+            </div>
+            <div class="prev-totali-row">
+              <span style="font-size:12.5px">Sconto cliente %</span>
+              <input type="number" id="pv-sconto" class="form-control" style="width:80px;text-align:right;font-size:13px" min="0" max="100" step="0.1" value="0" oninput="recalcTotali()" placeholder="0">
+            </div>
+            <hr style="border:none;border-top:1px solid var(--border);margin:4px 0">
+            <!-- Breakdown -->
+            <div class="prev-totali-row"><span>Subtotale base</span><span id="pv-subtotale">€ 0,00</span></div>
+            <div class="prev-totali-row" id="pv-magg-row" style="display:none;color:var(--warning-d);font-size:12.5px"><span>Maggiorazione</span><span id="pv-magg-amt"></span></div>
+            <div class="prev-totali-row" id="pv-sconto-row" style="display:none;color:#e53e3e;font-size:12.5px"><span>Sconto</span><span id="pv-sconto-amt"></span></div>
+            <div class="prev-totali-row" id="pv-imponibile-row" style="display:none"><span>Imponibile</span><span id="pv-imponibile">€ 0,00</span></div>
+            <div class="prev-totali-row">
+              <span>IVA</span>
+              <select id="pv-iva" class="form-control" style="width:100px;font-size:13px" onchange="recalcTotali()">
+                <option value="0">Esente (0%)</option>
+                <option value="10">10%</option>
+                <option value="22" selected>22%</option>
+              </select>
+            </div>
+            <div class="prev-totali-row prev-totali-finale"><span>Totale</span><span id="pv-totale">€ 0,00</span></div>
+          </div>
+        </div>
+
+        <!-- Status + Actions -->
+        <div class="prev-form-actions">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <label class="form-label" style="margin:0;white-space:nowrap">Stato:</label>
+            <select id="pv-status" class="form-control" style="width:140px">
+              <option value="bozza">Bozza</option>
+              <option value="inviato">Inviato</option>
+              <option value="accettato">Accettato</option>
+              <option value="rifiutato">Rifiutato</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-ghost" type="button" onclick="backToPreventivi()">Annulla</button>
+            <button class="btn btn-outline" type="button" onclick="savePreventivo(false)">💾 Salva</button>
+            <button class="btn btn-primary" type="button" onclick="savePreventivo(true)">🖨️ Salva e Stampa PDF</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ FATTURAZIONE ═══ -->
+    <div class="admin-section" id="sec-fatturazione">
+      <div class="section-topbar">
+        <h2 class="section-heading">🧾 Fatturazione</h2>
+        <button class="btn btn-primary" onclick="openNewFattura()">+ Nuova Fattura</button>
+      </div>
+      <div class="users-toolbar">
+        <div class="search-wrap"><span class="search-icon">🔍</span>
+          <input class="search-input" id="ft-search" placeholder="Cerca cliente o numero…" oninput="filterFatture()">
+        </div>
+        <select class="filter-select" id="ft-status-filter" onchange="filterFatture()">
+          <option value="">Tutti gli stati</option>
+          <option value="non_pagata">Non pagata</option>
+          <option value="pagata">Pagata</option>
+          <option value="scaduta">Scaduta</option>
+        </select>
+      </div>
+      <div class="users-table-wrap">
+        <table class="users-table" id="ft-table">
+          <thead><tr>
+            <th>N° Fattura</th><th>Cliente</th><th>Data</th><th>Importo</th><th>IVA</th><th>Totale</th><th>Stato</th><th>Azioni</th>
+          </tr></thead>
+          <tbody id="ft-tbody"></tbody>
+        </table>
+      </div>
+      <div id="ft-cards" class="users-cards"></div>
+      <div class="empty-state hidden" id="ft-empty">
+        <div class="empty-icon">🧾</div>
+        <h3>Nessuna fattura</h3>
+        <p>Crea la tua prima fattura con il pulsante "Nuova Fattura".</p>
+      </div>
+    </div>
+
+    <!-- ═══ DOCUMENTAZIONE ═══ -->
+    <div class="admin-section" id="sec-documentazione">
+      <div class="section-topbar">
+        <h2 class="section-heading">📁 Documentazione</h2>
+        <button class="btn btn-primary" onclick="openNewDoc()">+ Nuovo Documento</button>
+      </div>
+      <div class="users-toolbar">
+        <div class="search-wrap"><span class="search-icon">🔍</span>
+          <input class="search-input" id="doc-search" placeholder="Cerca nelle note…" oninput="filterDocs()">
+        </div>
+        <select class="filter-select" id="doc-tipo-filter" onchange="filterDocs()">
+          <option value="">Tutti i tipi</option>
+          <option value="rspp">RSPP</option>
+          <option value="certificazione">Certificazione</option>
+          <option value="spesa">Spesa detraibile</option>
+          <option value="permesso">Permesso</option>
+          <option value="altro">Altro</option>
+        </select>
+      </div>
+      <div id="doc-list"></div>
+      <div class="empty-state hidden" id="doc-empty">
+        <div class="empty-icon">📁</div>
+        <h3>Nessun documento</h3>
+        <p>Carica il primo documento con il pulsante "Nuovo Documento".</p>
+      </div>
+    </div>
+
+    <!-- ── USERS SECTION ── -->
+    <div class="admin-section" id="sec-users">
+      <!-- User list view -->
+      <div id="users-list-view">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <h2 style="font-size:22px;font-weight:800" id="users-list-title">Utenti</h2>
+          <button class="btn btn-primary" onclick="openAddUser()">+ Aggiungi Utente</button>
+        </div>
+        <div class="users-toolbar">
+          <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" id="user-search" placeholder="Cerca per nome, email, azienda..." oninput="filterUsers()">
+          </div>
+          <select class="filter-select" id="type-filter" onchange="filterUsers()">
+            <option value="">Tutti i tipi</option>
+            <option value="azienda">Azienda</option>
+            <option value="organizzazione">Organizzazione</option>
+          </select>
+          <select class="filter-select" id="plan-filter" onchange="filterUsers()">
+            <option value="">Tutti i piani</option>
+            <option value="attivo">Attivo</option>
+            <option value="inattivo">Inattivo</option>
+            <option value="scaduto">Scaduto</option>
+          </select>
+        </div>
+        <div class="users-table-wrap">
+          <table class="users-table" id="users-table">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Tipo</th>
+                <th>Telefono</th>
+                <th>Piano</th>
+                <th>Sedi</th>
+                <th>Registrato</th>
+                <th>Azioni</th>
+              </tr>
+            </thead>
+            <tbody id="users-tbody"></tbody>
+          </table>
+        </div>
+        <div id="users-cards" class="users-cards"></div>
+        <div class="empty-state hidden" id="users-empty">
+          <div class="empty-icon">👥</div>
+          <h3>Nessun utente trovato</h3>
+          <p>Modifica i filtri o aggiungi un nuovo utente.</p>
+        </div>
+      </div>
+
+      <!-- User profile view -->
+      <div id="user-profile-view" class="hidden">
+        <button class="back-btn" onclick="backToUsers()">← Torna agli utenti</button>
+        <div class="admin-user-profile">
+          <div class="admin-profile-header" id="admin-profile-header">
+            <!-- rendered by JS -->
+          </div>
+          <div class="admin-profile-body">
+            <div class="admin-profile-tabs">
+              <button class="admin-profile-tab active" data-atab="info" onclick="switchAdminTab('info')">ℹ️ Informazioni</button>
+              <button class="admin-profile-tab" data-atab="sedi" onclick="switchAdminTab('sedi')">🏢 Sedi</button>
+              <button class="admin-profile-tab" data-atab="interventi" onclick="switchAdminTab('interventi')">📋 Interventi</button>
+              <button class="admin-profile-tab" data-atab="documenti" onclick="switchAdminTab('documenti')">📁 Documenti</button>
+            </div>
+
+            <!-- Info tab -->
+            <div class="admin-tab-pane active" id="atab-info">
+              <div class="admin-info-grid">
+                <div>
+                  <h4 style="font-size:14px;font-weight:700;margin-bottom:12px;color:var(--g500);text-transform:uppercase;letter-spacing:.4px">Dati Utente</h4>
+                  <div id="admin-user-info-display"></div>
+                </div>
+                <div>
+                  <h4 style="font-size:14px;font-weight:700;margin-bottom:12px;color:var(--g500);text-transform:uppercase;letter-spacing:.4px">Piano di Manutenzione</h4>
+                  <p style="font-size:13.5px;color:var(--g600);margin-bottom:12px">Modifica lo stato del piano dell'utente:</p>
+                  <div class="plan-status-selector" id="plan-selector"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sedi tab -->
+            <div class="admin-tab-pane" id="atab-sedi">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                <h4 style="font-size:15px;font-weight:700">Sedi dell'utente</h4>
+                <button class="btn btn-primary btn-sm" onclick="openAdminAddSede()">+ Aggiungi Sede</button>
+              </div>
+              <div id="admin-sedi-list"></div>
+            </div>
+
+            <!-- Interventi tab -->
+            <div class="admin-tab-pane" id="atab-interventi">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                <h4 style="font-size:15px;font-weight:700">Interventi</h4>
+                <button class="btn btn-primary btn-sm" onclick="openAddRecord()">+ Nuovo Intervento</button>
+              </div>
+              <div id="admin-records-filter" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap"></div>
+              <div class="admin-rec-table-wrap">
+                <table class="records-table" id="admin-records-table">
+                  <thead><tr><th>Sede</th><th>Data</th><th>Tipo</th><th>Lavoro</th><th>Stato</th><th>Azioni</th></tr></thead>
+                  <tbody id="admin-records-tbody"></tbody>
+                </table>
+              </div>
+              <div class="admin-rec-cards" id="admin-records-cards"></div>
+              <div class="empty-state hidden" id="admin-records-empty">
+                <div class="empty-icon">📋</div>
+                <h3>Nessun intervento</h3>
+                <p>Crea il primo intervento per questo utente.</p>
+              </div>
+            </div>
+
+            <!-- Documenti tab -->
+            <div class="admin-tab-pane" id="atab-documenti">
+              <div id="admin-docs-by-sede"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL: Add/Edit User -->
+<div class="modal-overlay" id="modal-user">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modal-user-title">Aggiungi Utente</h3>
+      <button class="modal-close" onclick="closeModal('modal-user')">✕</button>
+    </div>
+    <form id="form-user">
+      <div class="auth-tabs" id="admin-type-tabs" style="margin-bottom:20px">
+        <button type="button" class="auth-tab active" data-type="azienda" onclick="adminSelectType('azienda')">🏢 Azienda</button>
+        <button type="button" class="auth-tab" data-type="organizzazione" onclick="adminSelectType('organizzazione')">🏛️ Organizzazione</button>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Nome referente *</label><input type="text" id="u-nome" class="form-control" required></div>
+        <div class="form-group"><label class="form-label">Cognome referente *</label><input type="text" id="u-cognome" class="form-control" required></div>
+      </div>
+      <div class="form-group"><label class="form-label" id="u-company-label">Ragione sociale *</label><input type="text" id="u-company" class="form-control" required></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Email *</label><input type="email" id="u-email" class="form-control" required></div>
+        <div class="form-group"><label class="form-label">Telefono *</label><input type="tel" id="u-phone" class="form-control" required></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password *</label>
+        <input type="password" id="u-password" class="form-control" placeholder="Minimo 8 caratteri">
+        <div class="form-hint" id="u-pwd-hint">Lascia vuoto per mantenere la password attuale</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Piano di manutenzione</label>
+        <select id="u-plan" class="form-control">
+          <option value="inattivo">Inattivo</option>
+          <option value="attivo">Attivo</option>
+          <option value="scaduto">Scaduto</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('modal-user')">Annulla</button>
+        <button type="submit" class="btn btn-primary" id="user-submit-btn">Aggiungi Utente</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Add/Edit Sede (admin) -->
+<div class="modal-overlay" id="modal-admin-sede">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modal-admin-sede-title">Aggiungi Sede</h3>
+      <button class="modal-close" onclick="closeModal('modal-admin-sede')">✕</button>
+    </div>
+    <form id="form-admin-sede">
+      <div class="form-group"><label class="form-label">Indirizzo *</label><input type="text" id="as-address" class="form-control" required></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Città *</label><input type="text" id="as-city" class="form-control" required></div>
+        <div class="form-group"><label class="form-label">Provincia *</label><input type="text" id="as-province" class="form-control" maxlength="2" required></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('modal-admin-sede')">Annulla</button>
+        <button type="submit" class="btn btn-primary" id="as-submit-btn">Aggiungi Sede</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Add/Edit Record (admin) -->
+<div class="modal-overlay" id="modal-record-admin">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modal-rec-title">Nuovo Intervento</h3>
+      <button class="modal-close" onclick="closeModal('modal-record-admin')">✕</button>
+    </div>
+    <form id="form-record-admin">
+      <div class="form-group">
+        <label class="form-label">Sede *</label>
+        <select id="rec-property" class="form-control" required></select>
+      </div>
+      <div class="record-row">
+        <div class="form-group">
+          <label class="form-label">Data intervento *</label>
+          <input type="date" id="rec-date" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo manutenzione *</label>
+          <select id="rec-type" class="form-control" required>
+            <option value="ordinaria">Ordinaria</option>
+            <option value="straordinaria">Straordinaria</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo di lavoro *</label>
+        <input type="text" id="rec-work" class="form-control" placeholder="Es: Taglio prato, Potatura siepi..." required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Stato *</label>
+        <select id="rec-status" class="form-control" required>
+          <option value="futuro">Futuro</option>
+          <option value="completato">Completato</option>
+          <option value="annullato">Annullato</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Note</label>
+        <textarea id="rec-notes" class="form-control" rows="3" placeholder="Note aggiuntive sull'intervento..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('modal-record-admin')">Annulla</button>
+        <button type="submit" class="btn btn-primary" id="rec-submit-btn">Salva Intervento</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: View Document (admin) -->
+<div class="modal-overlay" id="modal-admin-doc">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 class="modal-title" id="admin-doc-title">Documento</h3>
+      <button class="modal-close" onclick="closeModal('modal-admin-doc')">✕</button>
+    </div>
+    <div id="admin-doc-preview" style="text-align:center"></div>
+  </div>
+</div>
+
+<!-- MODAL: Add/Edit Collaboratore -->
+<div class="modal-overlay" id="modal-collaboratore">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="collab-modal-title">Aggiungi Collaboratore</h3>
+      <button class="modal-close" onclick="document.getElementById('modal-collaboratore').classList.remove('active')">✕</button>
+    </div>
+    <form id="form-collaboratore">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nome *</label>
+          <input type="text" class="form-control" id="col-nome" required placeholder="Mario">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cognome *</label>
+          <input type="text" class="form-control" id="col-cognome" required placeholder="Rossi">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ruolo *</label>
+        <select class="form-control" id="col-ruolo" required>
+          <option value="">Seleziona...</option>
+          <option value="Giardiniere">Giardiniere</option>
+          <option value="Potatore">Potatore</option>
+          <option value="Responsabile di zona">Responsabile di zona</option>
+          <option value="Tecnico irrigazione">Tecnico irrigazione</option>
+          <option value="Autista">Autista</option>
+          <option value="Operaio generico">Operaio generico</option>
+          <option value="Altro">Altro</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-control" id="col-email" placeholder="mario@email.it">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Telefono</label>
+          <input type="tel" class="form-control" id="col-telefono" placeholder="+39 333 1234567">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Indirizzo</label>
+          <input type="text" class="form-control" id="col-indirizzo" placeholder="Via Roma 1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Città</label>
+          <input type="text" class="form-control" id="col-citta" placeholder="Milano">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Note</label>
+        <textarea class="form-control" id="col-note" rows="3" placeholder="Note aggiuntive sul collaboratore..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('modal-collaboratore').classList.remove('active')">Annulla</button>
+        <button type="submit" class="btn btn-primary" id="col-save-btn">Salva Collaboratore</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Add/Edit Supplier -->
+<div class="modal-overlay" id="modal-supplier">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="supplier-modal-title">Aggiungi Fornitore</h3>
+      <button class="modal-close" onclick="document.getElementById('modal-supplier').classList.remove('active')">✕</button>
+    </div>
+    <form id="form-supplier">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Ragione Sociale *</label>
+          <input type="text" class="form-control" id="sup-ragione" required placeholder="Nome azienda fornitrice">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo Fornitore *</label>
+          <select class="form-control" id="sup-tipo" required>
+            <option value="">Seleziona...</option>
+            <option value="Attrezzature">Attrezzature</option>
+            <option value="Fertilizzanti e prodotti">Fertilizzanti e prodotti</option>
+            <option value="Trasporti e logistica">Trasporti e logistica</option>
+            <option value="Subappalto lavori">Subappalto lavori</option>
+            <option value="Materiali e forniture">Materiali e forniture</option>
+            <option value="Irrigazione">Irrigazione</option>
+            <option value="Altro">Altro</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-control" id="sup-email" placeholder="info@fornitore.it">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Telefono</label>
+          <input type="tel" class="form-control" id="sup-telefono" placeholder="+39 02 1234567">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Indirizzo</label>
+          <input type="text" class="form-control" id="sup-indirizzo" placeholder="Via Roma 1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Città</label>
+          <input type="text" class="form-control" id="sup-citta" placeholder="Milano">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Sito Web</label>
+        <input type="url" class="form-control" id="sup-sito" placeholder="https://www.fornitore.it">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Note</label>
+        <textarea class="form-control" id="sup-note" rows="3" placeholder="Note aggiuntive sul fornitore..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('modal-supplier').classList.remove('active')">Annulla</button>
+        <button type="submit" class="btn btn-primary" id="sup-save-btn">Salva Fornitore</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- QUOTE DETAIL MODAL -->
+<div class="modal-overlay" id="modal-quote-detail">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">📋 Richiesta Preventivo</h3>
+      <button class="modal-close" onclick="document.getElementById('modal-quote-detail').classList.remove('active')">✕</button>
+    </div>
+    <div id="quote-detail-body"></div>
+    <div class="modal-footer">
+      <div id="quote-detail-actions"></div>
+      <button class="btn btn-ghost" onclick="document.getElementById('modal-quote-detail').classList.remove('active')">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Impostazioni Azienda -->
+<div class="modal-overlay" id="modal-settings">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">⚙️ Impostazioni Azienda</h3>
+      <button class="modal-close" onclick="closeModal('modal-settings')">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--g500);margin-bottom:18px">Queste informazioni appariranno automaticamente su tutti i preventivi PDF.</p>
+    <form id="form-settings">
+      <div class="form-group">
+        <label class="form-label">Ragione Sociale</label>
+        <input type="text" class="form-control" id="set-ragione" placeholder="Greenhouse S.r.l.">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Partita IVA</label>
+          <input type="text" class="form-control" id="set-piva" placeholder="IT01234567890">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sito Web</label>
+          <input type="text" class="form-control" id="set-sito" placeholder="www.greenhouse.it">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-control" id="set-email" placeholder="info@greenhouse.it">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Telefono assistenza</label>
+          <input type="tel" class="form-control" id="set-tel" placeholder="+39 02 1234567">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nota assistenza</label>
+        <input type="text" class="form-control" id="set-assistenza" placeholder="Assistenza 7 giorni su 7, h 8-20">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('modal-settings')">Annulla</button>
+        <button type="submit" class="btn btn-primary">💾 Salva impostazioni</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Listino Prezzi -->
+<div class="modal-overlay" id="modal-listino">
+  <div class="modal modal-xl">
+    <div class="modal-header">
+      <h3 class="modal-title">📋 Listino Prezzi</h3>
+      <button class="modal-close" onclick="closeModal('modal-listino')">✕</button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+      <div class="search-wrap" style="max-width:280px">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="search-input" id="listino-search" placeholder="Cerca voce..." oninput="filterListino()">
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="openAddListinoItem()">+ Aggiungi voce</button>
+      </div>
+    </div>
+    <div id="listino-body" style="max-height:60vh;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- MODAL: Add/Edit Listino Item -->
+<div class="modal-overlay" id="modal-listino-item">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="listino-item-title">Nuova voce listino</h3>
+      <button class="modal-close" onclick="closeModal('modal-listino-item')">✕</button>
+    </div>
+    <form id="form-listino-item">
+      <div class="form-group">
+        <label class="form-label">Categoria *</label>
+        <select class="form-control" id="li-categoria" required>
+          <option value="">Seleziona...</option>
+          <option value="Alberature – Potature">Alberature – Potature</option>
+          <option value="Alberature – Abbattimenti">Alberature – Abbattimenti</option>
+          <option value="Arbusti, Siepi, Aiuole">Arbusti, Siepi, Aiuole</option>
+          <option value="Tappeti Erbosi – Manutenzione">Tappeti Erbosi – Manutenzione</option>
+          <option value="Opere d'Impianto">Opere d'Impianto</option>
+          <option value="Impianti di Irrigazione">Impianti di Irrigazione</option>
+          <option value="Lavorazioni Terreno">Lavorazioni Terreno</option>
+          <option value="Noleggi e Servizi">Noleggi e Servizi</option>
+          <option value="Altro">Altro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descrizione *</label>
+        <input type="text" class="form-control" id="li-descrizione" required placeholder="Es: Potatura albero h 5-10 m">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Unità di misura *</label>
+          <select class="form-control" id="li-unita" required>
+            <option value="cad">cad (cadauno)</option>
+            <option value="mq">mq (metri quadri)</option>
+            <option value="ml">ml (metri lineari)</option>
+            <option value="mc">mc (metri cubi)</option>
+            <option value="ora">ora</option>
+            <option value="corpo">a corpo</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Prezzo unitario (€) *</label>
+          <input type="number" class="form-control" id="li-prezzo" required min="0" step="0.01" placeholder="0.00">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('modal-listino-item')">Annulla</button>
+        <button type="submit" class="btn btn-primary" id="li-save-btn">Salva voce</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Fattura -->
+<div class="modal-overlay" id="modal-fattura">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="fattura-modal-title">Nuova Fattura</h3>
+      <button class="modal-close" onclick="closeModal('modal-fattura')">✕</button>
+    </div>
+    <form id="form-fattura">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">N° Fattura *</label>
+          <input type="text" id="ft-numero" class="form-control" placeholder="FT-2026-0001" required></div>
+        <div class="form-group"><label class="form-label">Data *</label>
+          <input type="date" id="ft-data" class="form-control" required></div>
+      </div>
+      <div class="form-group"><label class="form-label">Cliente *</label>
+        <input type="text" id="ft-cliente" class="form-control" placeholder="Nome cliente o azienda" required></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Imponibile (€) *</label>
+          <input type="number" id="ft-importo" class="form-control" step="0.01" min="0" placeholder="0.00" required oninput="calcFtTotale()"></div>
+        <div class="form-group"><label class="form-label">IVA %</label>
+          <select id="ft-iva" class="form-control" onchange="calcFtTotale()">
+            <option value="22">22%</option><option value="10">10%</option><option value="4">4%</option><option value="0">Esente</option>
+          </select></div>
+      </div>
+      <div class="form-group"><label class="form-label">Totale con IVA</label>
+        <div id="ft-totale-preview" style="padding:9px 13px;background:var(--primary-pale);border-radius:8px;font-weight:700;color:var(--primary-d)">€ 0,00</div>
+      </div>
+      <div class="form-group"><label class="form-label">Stato</label>
+        <select id="ft-status" class="form-control">
+          <option value="non_pagata">Non pagata</option>
+          <option value="pagata">Pagata</option>
+          <option value="scaduta">Scaduta</option>
+        </select></div>
+      <div class="form-group"><label class="form-label">Descrizione</label>
+        <textarea id="ft-descrizione" class="form-control" rows="2" placeholder="Descrizione servizi fatturati…"></textarea></div>
+      <div class="form-group"><label class="form-label">Allegato (PDF / immagine)</label>
+        <input type="file" id="ft-file" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.webp">
+        <div class="form-hint" id="ft-file-name" style="margin-top:6px"></div></div>
+      <div class="form-group"><label class="form-label">Note interne</label>
+        <textarea id="ft-note" class="form-control" rows="2" placeholder="Note…"></textarea></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('modal-fattura')">Annulla</button>
+        <button type="submit" class="btn btn-primary">Salva Fattura</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Documento -->
+<div class="modal-overlay" id="modal-documento">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="doc-modal-title">Nuovo Documento</h3>
+      <button class="modal-close" onclick="closeModal('modal-documento')">✕</button>
+    </div>
+    <form id="form-documento">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Tipo documento *</label>
+          <select id="doc-tipo" class="form-control" required>
+            <option value="">Seleziona tipo…</option>
+            <option value="rspp">RSPP</option>
+            <option value="certificazione">Certificazione</option>
+            <option value="spesa">Spesa detraibile</option>
+            <option value="permesso">Permesso</option>
+            <option value="altro">Altro</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">Data documento *</label>
+          <input type="date" id="doc-data" class="form-control" required></div>
+      </div>
+      <div class="form-group"><label class="form-label">File (PDF / immagine) *</label>
+        <input type="file" id="doc-file" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx">
+        <div class="form-hint" id="doc-file-name" style="margin-top:6px"></div></div>
+      <div class="form-group"><label class="form-label">Note</label>
+        <textarea id="doc-note" class="form-control" rows="3" placeholder="Descrizione o note sul documento…"></textarea></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('modal-documento')">Annulla</button>
+        <button type="submit" class="btn btn-primary">Salva Documento</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-icon">⚠️</div>
+    <h3 id="confirm-title">Sei sicuro?</h3>
+    <p id="confirm-msg">Questa azione non può essere annullata.</p>
+    <div class="confirm-actions">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Annulla</button>
+      <button class="btn btn-danger" id="confirm-ok-btn">Conferma</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>
