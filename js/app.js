@@ -20,14 +20,22 @@ const Auth = {
   // ── REGISTER ──
   async register(userData) {
     if (USE_LOCAL) return _localAuth.register(userData);
-    const { data, error } = await sb.auth.signUp({ email: userData.email, password: userData.password });
+    const { data, error } = await sb.auth.signUp({
+      email: userData.email,
+      password: userData.password,
+      options: {
+        data: {
+          nome:         userData.nome,
+          cognome:      userData.cognome,
+          type:         userData.type,
+          company_name: userData.companyName,
+          phone:        userData.phone
+        }
+      }
+    });
     if (error) return { success: false, error: error.message };
     if (!data.user) return { success: false, error: 'Registrazione non completata. Controlla la tua email.' };
-    const { error: pErr } = await sb.from('user_profiles').insert({
-      id: data.user.id, type: userData.type, nome: userData.nome, cognome: userData.cognome,
-      company_name: userData.companyName, phone: userData.phone, plan_status: 'inattivo', role: 'user'
-    });
-    if (pErr) return { success: false, error: pErr.message };
+    // Il profilo viene creato automaticamente dal trigger on_auth_user_created
     return { success: true };
   },
 
