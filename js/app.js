@@ -708,7 +708,8 @@ function mapSupplierToDb(f) {
 // ─── Field mappers — Preventivi ────────────────────
 function mapPreventivoFromDb(r) {
   if (!r) return null;
-  return { id: r.id, numero: r.numero, status: r.status, createdAt: r.created_at, ...(r.dati || {}) };
+  // I campi del DB (status, numero) devono avere precedenza su quelli in dati
+  return { ...(r.dati || {}), id: r.id, numero: r.numero, status: r.status, createdAt: r.created_at };
 }
 function mapPreventivoToDb(f) {
   const r = {};
