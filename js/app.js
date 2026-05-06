@@ -480,6 +480,37 @@ const DB = {
     if (!path || USE_LOCAL) return;
     await sb.storage.from(bucket).remove([path]);
   },
+
+  // ── Calendario Soci ──
+  async getCalUsers() {
+    if (USE_LOCAL) {
+      try {
+        const d = JSON.parse(localStorage.getItem('gh_cal_data') || 'null');
+        if (!d || !Array.isArray(d.users)) return null; // null = usa default
+        return d.users.map(u => ({ ...u, slots: d.slots?.[u.id] || [] }));
+      } catch { return null; }
+    }
+    const { data, error } = await sb.from('calendar_users').select('*').order('created_at');
+    if (error) throw error;
+    return data || [];
+  },
+  async upsertCalUser(user) {
+    if (USE_LOCAL) return;
+    const { error } = await sb.from('calendar_users').upsert({
+      id: user.id, name: user.name, color: user.color, slots: user.slots || []
+    });
+    if (error) throw error;
+  },
+  async deleteCalUserById(userId) {
+    if (USE_LOCAL) return;
+    const { error } = await sb.from('calendar_users').delete().eq('id', userId);
+    if (error) throw error;
+  },
+  async updateCalSlots(userId, slots) {
+    if (USE_LOCAL) return;
+    const { error } = await sb.from('calendar_users').update({ slots }).eq('id', userId);
+    if (error) throw error;
+  },
 };
 
 // ══════════════════════════════════════════════════

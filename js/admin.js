@@ -1965,40 +1965,54 @@ async function downloadAdminFile(id, type) {
 //  CALENDARIO DISPONIBILITÀ SOCI
 // ═══════════════════════════════════════════════════════
 
-const CAL_KEY = 'gh_cal_data';
 const CAL_DEFAULT_USERS = [
-  { id: 'cal_lorenzo',  name: 'Lorenzo',  color: '#5a9e6f' },
-  { id: 'cal_sascha',   name: 'Sascha',   color: '#3b82f6' },
-  { id: 'cal_emmanuel', name: 'Emmanuel', color: '#f59e0b' },
+  { id: 'cal_lorenzo',  name: 'Lorenzo',  color: '#5a9e6f', slots: [] },
+  { id: 'cal_sascha',   name: 'Sascha',   color: '#3b82f6', slots: [] },
+  { id: 'cal_emmanuel', name: 'Emmanuel', color: '#f59e0b', slots: [] },
 ];
 const CAL_DAYS  = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
 const CAL_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
 
-let _calData         = null;
+let _calUsers        = [];   // array di { id, name, color, slots[] }
 let _calSelectedUser = null;
 let _calInited       = false;
 
-// ── Carica / Salva ────────────────────────────────────
-function calLoad() {
+// ── Carica da Supabase / localStorage ────────────────
+async function calLoad() {
   try {
-    const raw = localStorage.getItem(CAL_KEY);
-    if (raw) _calData = JSON.parse(raw);
-  } catch {}
-  if (!_calData || !Array.isArray(_calData.users)) {
-    _calData = { users: JSON.parse(JSON.stringify(CAL_DEFAULT_USERS)), slots: {} };
-    calSave();
+    const data = await DB.getCalUsers();
+    if (data && data.length > 0) {
+      _calUsers = data;
+    } else if (data === null) {
+      // localStorage vuoto → usa default
+      _calUsers = JSON.parse(JSON.stringify(CAL_DEFAULT_USERS));
+    } else {
+      // Supabase restituisce array vuoto (tabella vuota) → usa default e inserisci
+      _calUsers = JSON.parse(JSON.stringify(CAL_DEFAULT_USERS));
+      for (const u of _calUsers) await DB.upsertCalUser(u);
+    }
+  } catch(e) {
+    console.warn('calLoad error', e);
+    _calUsers = JSON.parse(JSON.stringify(CAL_DEFAULT_USERS));
   }
 }
-function calSave() {
-  localStorage.setItem(CAL_KEY, JSON.stringify(_calData));
+
+// Salva in localStorage come backup (usato solo in modalità locale)
+function calSaveLocal() {
+  const slots = {};
+  _calUsers.forEach(u => { slots[u.id] = u.slots || []; });
+  localStorage.setItem('gh_cal_data', JSON.stringify({ users: _calUsers, slots }));
 }
 
-// ── Init (chiamato ogni volta che si apre la sezione) ─
-function initCalendario() {
-  calLoad();
+// ── Init ──────────────────────────────────────────────
+async function initCalendario() {
+  calSetLoading(true);
+  await calLoad();
+  calSetLoading(false);
   renderCalUsers();
+
   if (_calSelectedUser) {
-    const user = _calData.users.find(u => u.id === _calSelectedUser);
+    const user = _calUsers.find(u => u.id === _calSelectedUser);
     if (user) { renderCalendar(user); return; }
     _calSelectedUser = null;
   }
@@ -2007,31 +2021,42 @@ function initCalendario() {
 
   if (!_calInited) {
     _calInited = true;
-    document.getElementById('form-cal-user').addEventListener('submit', function(e) {
+    document.getElementById('form-cal-user').addEventListener('submit', async function(e) {
       e.preventDefault();
       const name  = document.getElementById('cal-u-nome').value.trim();
       const color = document.querySelector('input[name="cal-color"]:checked')?.value || '#5a9e6f';
       if (!name) return;
-      const id = 'cal_' + Date.now();
-      _calData.users.push({ id, name, color });
-      calSave();
-      renderCalUsers();
-      closeModal('modal-cal-user');
-      selectCalUser(id);
+      const newUser = { id: 'cal_' + Date.now(), name, color, slots: [] };
+      try {
+        await DB.upsertCalUser(newUser);
+        _calUsers.push(newUser);
+        calSaveLocal();
+        renderCalUsers();
+        closeModal('modal-cal-user');
+        selectCalUser(newUser.id);
+      } catch(e) {
+        showToast('Errore nel salvataggio', 'error');
+      }
     });
   }
+}
+
+function calSetLoading(on) {
+  const list = document.getElementById('cal-users-list');
+  if (!list) return;
+  if (on) list.innerHTML = '<p style="font-size:13px;color:var(--g400);padding:6px 4px">Caricamento…</p>';
 }
 
 // ── Render lista soci ─────────────────────────────────
 function renderCalUsers() {
   const list = document.getElementById('cal-users-list');
   if (!list) return;
-  if (!_calData || _calData.users.length === 0) {
+  if (!_calUsers.length) {
     list.innerHTML = '<p style="font-size:13px;color:var(--g400);padding:6px 4px">Nessun socio.</p>';
     return;
   }
-  list.innerHTML = _calData.users.map(u => {
-    const blockedCount = (_calData.slots[u.id] || []).length;
+  list.innerHTML = _calUsers.map(u => {
+    const blockedCount = (u.slots || []).length;
     return `
     <div class="cal-user-card ${_calSelectedUser === u.id ? 'active' : ''}" onclick="selectCalUser('${u.id}')">
       <div class="cal-user-avatar" style="background:${u.color}">${u.name.charAt(0).toUpperCase()}</div>
@@ -2047,7 +2072,7 @@ function renderCalUsers() {
 // ── Seleziona socio ───────────────────────────────────
 function selectCalUser(userId) {
   _calSelectedUser = userId;
-  const user = _calData.users.find(u => u.id === userId);
+  const user = _calUsers.find(u => u.id === userId);
   if (!user) return;
   renderCalUsers();
   renderCalendar(user);
@@ -2058,23 +2083,21 @@ function renderCalendar(user) {
   document.getElementById('cal-empty-state').style.display = 'none';
   document.getElementById('cal-view').classList.remove('hidden');
 
-  const slots       = _calData.slots[user.id] || [];
-  const slotsSet    = new Set(slots);
+  const slots        = user.slots || [];
+  const slotsSet     = new Set(slots);
   const blockedCount = slots.length;
 
-  // Header utente
   document.getElementById('cal-user-header').innerHTML = `
     <div class="cal-user-header-avatar" style="background:${user.color}">${user.name.charAt(0).toUpperCase()}</div>
     <div>
       <div class="cal-user-header-name">${user.name}</div>
       <div class="cal-user-header-sub">
         ${blockedCount > 0
-          ? `<span style="color:${user.color};font-weight:600">${blockedCount}</span> slot non disponibili · Clicca uno slot per bloccarlo/sbloccarlo`
-          : 'Tutte le fasce orarie disponibili · Clicca uno slot per bloccarlo'}
+          ? `<span style="color:${user.color};font-weight:600">${blockedCount}</span> slot non disponibili · Clicca per bloccare/sbloccare`
+          : 'Tutte le fasce disponibili · Clicca uno slot per bloccarlo'}
       </div>
     </div>`;
 
-  // Legenda colore
   const legendBlocked = document.getElementById('cal-legend-blocked');
   if (legendBlocked) {
     legendBlocked.innerHTML = `
@@ -2082,18 +2105,11 @@ function renderCalendar(user) {
       <span>Non disponibile</span>`;
   }
 
-  // Costruisci griglia
-  let html = '';
+  let html = '<div class="cal-hdr corner"></div>';
+  CAL_DAYS.forEach(d => { html += `<div class="cal-hdr">${d}</div>`; });
 
-  // Riga header
-  html += '<div class="cal-hdr corner"></div>';
-  CAL_DAYS.forEach((d, i) => {
-    html += `<div class="cal-hdr">${d}</div>`;
-  });
-
-  // Righe ore
   CAL_HOURS.forEach(h => {
-    html += `<div class="cal-time">${String(h).padStart(2, '0')}:00</div>`;
+    html += `<div class="cal-time">${String(h).padStart(2,'0')}:00</div>`;
     for (let d = 0; d < 7; d++) {
       const key       = `${d}-${h}`;
       const isBlocked = slotsSet.has(key);
@@ -2109,26 +2125,33 @@ function renderCalendar(user) {
 }
 
 // ── Toggle slot ───────────────────────────────────────
-function toggleCalSlot(userId, day, hour) {
-  if (!_calData.slots[userId]) _calData.slots[userId] = [];
+async function toggleCalSlot(userId, day, hour) {
+  const user = _calUsers.find(u => u.id === userId);
+  if (!user) return;
+  if (!user.slots) user.slots = [];
+
   const key = `${day}-${hour}`;
-  const idx = _calData.slots[userId].indexOf(key);
-  if (idx === -1) {
-    _calData.slots[userId].push(key);
-  } else {
-    _calData.slots[userId].splice(idx, 1);
+  const idx = user.slots.indexOf(key);
+  if (idx === -1) { user.slots.push(key); } else { user.slots.splice(idx, 1); }
+
+  // Aggiorna UI immediatamente (ottimistic update)
+  renderCalendar(user);
+  renderCalUsers();
+
+  // Salva su Supabase / localStorage in background
+  try {
+    await DB.updateCalSlots(userId, user.slots);
+    calSaveLocal();
+  } catch(e) {
+    console.warn('toggleCalSlot save error', e);
+    showToast('Errore nel salvataggio slot', 'error');
   }
-  calSave();
-  const user = _calData.users.find(u => u.id === userId);
-  if (user) renderCalendar(user);
-  renderCalUsers(); // aggiorna contatore nella lista
 }
 
 // ── Aggiungi socio ────────────────────────────────────
 function openAddCalUser() {
   const nameInput = document.getElementById('cal-u-nome');
   if (nameInput) nameInput.value = '';
-  // Reset selezione colore al verde di default
   const firstRadio = document.querySelector('input[name="cal-color"]');
   if (firstRadio) firstRadio.checked = true;
   document.getElementById('modal-cal-user').classList.add('active');
@@ -2136,7 +2159,7 @@ function openAddCalUser() {
 
 // ── Elimina socio ─────────────────────────────────────
 function confirmDeleteCalUser(userId) {
-  const user = _calData.users.find(u => u.id === userId);
+  const user = _calUsers.find(u => u.id === userId);
   if (!user) return;
   showConfirm(
     `Elimina ${user.name}`,
@@ -2144,14 +2167,18 @@ function confirmDeleteCalUser(userId) {
     () => deleteCalUser(userId)
   );
 }
-function deleteCalUser(userId) {
-  _calData.users = _calData.users.filter(u => u.id !== userId);
-  delete _calData.slots[userId];
-  calSave();
-  if (_calSelectedUser === userId) {
-    _calSelectedUser = null;
-    document.getElementById('cal-empty-state').style.display = '';
-    document.getElementById('cal-view').classList.add('hidden');
+async function deleteCalUser(userId) {
+  try {
+    await DB.deleteCalUserById(userId);
+    _calUsers = _calUsers.filter(u => u.id !== userId);
+    calSaveLocal();
+    if (_calSelectedUser === userId) {
+      _calSelectedUser = null;
+      document.getElementById('cal-empty-state').style.display = '';
+      document.getElementById('cal-view').classList.add('hidden');
+    }
+    renderCalUsers();
+  } catch(e) {
+    showToast('Errore durante l\'eliminazione', 'error');
   }
-  renderCalUsers();
 }
