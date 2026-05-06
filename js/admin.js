@@ -38,6 +38,7 @@ async function showSection(sec) {
   if (sec === 'preventivatore')  await renderPreventivi();
   if (sec === 'fatturazione')    await renderFatture();
   if (sec === 'documentazione')  await renderDocs();
+  if (sec === 'calendario')      initCalendario();
 }
 
 async function doAdminLogout() { await Auth.logout(); window.location.href = 'login.html'; }
@@ -1958,4 +1959,199 @@ async function downloadAdminFile(id, type) {
   }
   const a = Object.assign(document.createElement('a'), { href: url, download: record.fileName||'documento' });
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+// ═══════════════════════════════════════════════════════
+//  CALENDARIO DISPONIBILITÀ SOCI
+// ═══════════════════════════════════════════════════════
+
+const CAL_KEY = 'gh_cal_data';
+const CAL_DEFAULT_USERS = [
+  { id: 'cal_lorenzo',  name: 'Lorenzo',  color: '#5a9e6f' },
+  { id: 'cal_sascha',   name: 'Sascha',   color: '#3b82f6' },
+  { id: 'cal_emmanuel', name: 'Emmanuel', color: '#f59e0b' },
+];
+const CAL_DAYS  = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+const CAL_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+
+let _calData         = null;
+let _calSelectedUser = null;
+let _calInited       = false;
+
+// ── Carica / Salva ────────────────────────────────────
+function calLoad() {
+  try {
+    const raw = localStorage.getItem(CAL_KEY);
+    if (raw) _calData = JSON.parse(raw);
+  } catch {}
+  if (!_calData || !Array.isArray(_calData.users)) {
+    _calData = { users: JSON.parse(JSON.stringify(CAL_DEFAULT_USERS)), slots: {} };
+    calSave();
+  }
+}
+function calSave() {
+  localStorage.setItem(CAL_KEY, JSON.stringify(_calData));
+}
+
+// ── Init (chiamato ogni volta che si apre la sezione) ─
+function initCalendario() {
+  calLoad();
+  renderCalUsers();
+  if (_calSelectedUser) {
+    const user = _calData.users.find(u => u.id === _calSelectedUser);
+    if (user) { renderCalendar(user); return; }
+    _calSelectedUser = null;
+  }
+  document.getElementById('cal-empty-state').style.display = '';
+  document.getElementById('cal-view').classList.add('hidden');
+
+  if (!_calInited) {
+    _calInited = true;
+    document.getElementById('form-cal-user').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const name  = document.getElementById('cal-u-nome').value.trim();
+      const color = document.querySelector('input[name="cal-color"]:checked')?.value || '#5a9e6f';
+      if (!name) return;
+      const id = 'cal_' + Date.now();
+      _calData.users.push({ id, name, color });
+      calSave();
+      renderCalUsers();
+      closeModal('modal-cal-user');
+      selectCalUser(id);
+    });
+  }
+}
+
+// ── Render lista soci ─────────────────────────────────
+function renderCalUsers() {
+  const list = document.getElementById('cal-users-list');
+  if (!list) return;
+  if (!_calData || _calData.users.length === 0) {
+    list.innerHTML = '<p style="font-size:13px;color:var(--g400);padding:6px 4px">Nessun socio.</p>';
+    return;
+  }
+  list.innerHTML = _calData.users.map(u => {
+    const blockedCount = (_calData.slots[u.id] || []).length;
+    return `
+    <div class="cal-user-card ${_calSelectedUser === u.id ? 'active' : ''}" onclick="selectCalUser('${u.id}')">
+      <div class="cal-user-avatar" style="background:${u.color}">${u.name.charAt(0).toUpperCase()}</div>
+      <div style="flex:1;min-width:0">
+        <div class="cal-user-name">${u.name}</div>
+        ${blockedCount > 0 ? `<div style="font-size:11px;color:var(--g400)">${blockedCount} slot bloccati</div>` : ''}
+      </div>
+      <button class="cal-del-btn" onclick="event.stopPropagation();confirmDeleteCalUser('${u.id}')" title="Elimina socio">🗑</button>
+    </div>`;
+  }).join('');
+}
+
+// ── Seleziona socio ───────────────────────────────────
+function selectCalUser(userId) {
+  _calSelectedUser = userId;
+  const user = _calData.users.find(u => u.id === userId);
+  if (!user) return;
+  renderCalUsers();
+  renderCalendar(user);
+}
+
+// ── Render calendario settimanale ─────────────────────
+function renderCalendar(user) {
+  document.getElementById('cal-empty-state').style.display = 'none';
+  document.getElementById('cal-view').classList.remove('hidden');
+
+  const slots       = _calData.slots[user.id] || [];
+  const slotsSet    = new Set(slots);
+  const blockedCount = slots.length;
+
+  // Header utente
+  document.getElementById('cal-user-header').innerHTML = `
+    <div class="cal-user-header-avatar" style="background:${user.color}">${user.name.charAt(0).toUpperCase()}</div>
+    <div>
+      <div class="cal-user-header-name">${user.name}</div>
+      <div class="cal-user-header-sub">
+        ${blockedCount > 0
+          ? `<span style="color:${user.color};font-weight:600">${blockedCount}</span> slot non disponibili · Clicca uno slot per bloccarlo/sbloccarlo`
+          : 'Tutte le fasce orarie disponibili · Clicca uno slot per bloccarlo'}
+      </div>
+    </div>`;
+
+  // Legenda colore
+  const legendBlocked = document.getElementById('cal-legend-blocked');
+  if (legendBlocked) {
+    legendBlocked.innerHTML = `
+      <div class="cal-legend-dot" style="background:${user.color}"></div>
+      <span>Non disponibile</span>`;
+  }
+
+  // Costruisci griglia
+  let html = '';
+
+  // Riga header
+  html += '<div class="cal-hdr corner"></div>';
+  CAL_DAYS.forEach((d, i) => {
+    html += `<div class="cal-hdr">${d}</div>`;
+  });
+
+  // Righe ore
+  CAL_HOURS.forEach(h => {
+    html += `<div class="cal-time">${String(h).padStart(2, '0')}:00</div>`;
+    for (let d = 0; d < 7; d++) {
+      const key       = `${d}-${h}`;
+      const isBlocked = slotsSet.has(key);
+      const bgStyle   = isBlocked ? `background:${user.color};` : '';
+      const tooltip   = `${CAL_DAYS[d]} ${String(h).padStart(2,'0')}:00–${String(h+1).padStart(2,'0')}:00`;
+      html += `<div class="cal-slot${isBlocked ? ' blocked' : ''}" style="${bgStyle}"
+                    onclick="toggleCalSlot('${user.id}',${d},${h})"
+                    title="${isBlocked ? '🔴 ' : '🟢 '}${tooltip}"></div>`;
+    }
+  });
+
+  document.getElementById('cal-grid').innerHTML = html;
+}
+
+// ── Toggle slot ───────────────────────────────────────
+function toggleCalSlot(userId, day, hour) {
+  if (!_calData.slots[userId]) _calData.slots[userId] = [];
+  const key = `${day}-${hour}`;
+  const idx = _calData.slots[userId].indexOf(key);
+  if (idx === -1) {
+    _calData.slots[userId].push(key);
+  } else {
+    _calData.slots[userId].splice(idx, 1);
+  }
+  calSave();
+  const user = _calData.users.find(u => u.id === userId);
+  if (user) renderCalendar(user);
+  renderCalUsers(); // aggiorna contatore nella lista
+}
+
+// ── Aggiungi socio ────────────────────────────────────
+function openAddCalUser() {
+  const nameInput = document.getElementById('cal-u-nome');
+  if (nameInput) nameInput.value = '';
+  // Reset selezione colore al verde di default
+  const firstRadio = document.querySelector('input[name="cal-color"]');
+  if (firstRadio) firstRadio.checked = true;
+  document.getElementById('modal-cal-user').classList.add('active');
+}
+
+// ── Elimina socio ─────────────────────────────────────
+function confirmDeleteCalUser(userId) {
+  const user = _calData.users.find(u => u.id === userId);
+  if (!user) return;
+  showConfirm(
+    `Elimina ${user.name}`,
+    `Vuoi eliminare ${user.name} dal calendario? Tutti i suoi slot verranno persi.`,
+    () => deleteCalUser(userId)
+  );
+}
+function deleteCalUser(userId) {
+  _calData.users = _calData.users.filter(u => u.id !== userId);
+  delete _calData.slots[userId];
+  calSave();
+  if (_calSelectedUser === userId) {
+    _calSelectedUser = null;
+    document.getElementById('cal-empty-state').style.display = '';
+    document.getElementById('cal-view').classList.add('hidden');
+  }
+  renderCalUsers();
 }

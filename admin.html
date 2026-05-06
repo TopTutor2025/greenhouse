@@ -60,6 +60,9 @@
       <button class="admin-nav-item" data-sec="documentazione" onclick="showSection('documentazione')">
         <span class="nav-icon">📁</span> Documentazione
       </button>
+      <button class="admin-nav-item" data-sec="calendario" onclick="showSection('calendario')">
+        <span class="nav-icon">📅</span> Calendario
+      </button>
     </nav>
   </aside>
 
@@ -383,6 +386,45 @@
       </div>
     </div>
 
+    <!-- ── CALENDARIO SECTION ── -->
+    <div class="admin-section" id="sec-calendario">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <h2 style="font-size:22px;font-weight:800">📅 Disponibilità Soci</h2>
+        <button class="btn btn-primary" onclick="openAddCalUser()">+ Aggiungi Socio</button>
+      </div>
+      <div class="cal-layout">
+        <!-- Pannello soci -->
+        <div class="cal-users-panel">
+          <div class="cal-users-title">Soci</div>
+          <div id="cal-users-list"></div>
+        </div>
+        <!-- Pannello calendario -->
+        <div class="cal-main-panel">
+          <div id="cal-empty-state" style="padding:60px 20px;text-align:center">
+            <div style="font-size:48px;margin-bottom:12px">📅</div>
+            <h3 style="font-size:16px;font-weight:700;margin-bottom:6px">Seleziona un socio</h3>
+            <p style="color:var(--g500);font-size:14px">Clicca su un nome per visualizzare il suo calendario settimanale.</p>
+          </div>
+          <div id="cal-view" class="hidden">
+            <div class="cal-user-header" id="cal-user-header"></div>
+            <div class="cal-grid-wrap">
+              <div class="cal-grid" id="cal-grid"></div>
+            </div>
+            <div class="cal-legend">
+              <div class="cal-legend-item">
+                <div class="cal-legend-dot" style="background:var(--g100);border:1px solid var(--g200)"></div>
+                <span>Disponibile</span>
+              </div>
+              <div class="cal-legend-item" id="cal-legend-blocked">
+                <div class="cal-legend-dot"></div>
+                <span>Non disponibile</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ── USERS SECTION ── -->
     <div class="admin-section" id="sec-users">
       <!-- User list view -->
@@ -502,6 +544,39 @@
     </div>
 
   </main>
+</div>
+
+<!-- MODAL: Aggiungi Socio Calendario -->
+<div class="modal-overlay" id="modal-cal-user">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="cal-modal-title">Aggiungi Socio</h3>
+      <button class="modal-close" onclick="closeModal('modal-cal-user')">✕</button>
+    </div>
+    <form id="form-cal-user">
+      <div class="form-group">
+        <label class="form-label">Nome *</label>
+        <input type="text" id="cal-u-nome" class="form-control" required placeholder="Nome del socio">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Colore</label>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
+          <label class="cal-color-opt"><input type="radio" name="cal-color" value="#5a9e6f" checked><span style="background:#5a9e6f"></span></label>
+          <label class="cal-color-opt"><input type="radio" name="cal-color" value="#3b82f6"><span style="background:#3b82f6"></span></label>
+          <label class="cal-color-opt"><input type="radio" name="cal-color" value="#f59e0b"><span style="background:#f59e0b"></span></label>
+          <label class="cal-color-opt"><input type="radio" name="cal-color" value="#ef4444"><span style="background:#ef4444"></span></label>
+          <label class="cal-color-opt"><input type="radio" name="cal-color" value="#8b5cf6"><span style="background:#8b5cf6"></span></label>
+          <label class="cal-color-opt"><input type="radio" name="cal-color" value="#ec4899"><span style="background:#ec4899"></span></label>
+          <label class="cal-color-opt"><input type="radio" name="cal-color" value="#14b8a6"><span style="background:#14b8a6"></span></label>
+          <label class="cal-color-opt"><input type="radio" name="cal-color" value="#f97316"><span style="background:#f97316"></span></label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('modal-cal-user')">Annulla</button>
+        <button type="submit" class="btn btn-primary">Aggiungi</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <!-- MODAL: Add/Edit User -->
