@@ -501,47 +501,88 @@
 .cal-user-header-name { font-size: 17px; font-weight: 700; }
 .cal-user-header-sub { font-size: 12.5px; color: var(--g500); margin-top: 2px; }
 
-/* Griglia calendario */
-.cal-grid-wrap { overflow-x: auto; }
-.cal-grid {
+/* ── Navigazione mese ── */
+.cal-month-nav {
+  display: flex; align-items: center; justify-content: center;
+  gap: 16px; padding: 14px 20px;
+  border-bottom: 1px solid var(--g100);
+}
+.cal-nav-btn {
+  background: var(--g50); border: 1.5px solid var(--g200);
+  border-radius: 8px; width: 34px; height: 34px;
+  cursor: pointer; font-size: 20px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--g600); transition: background 0.15s;
+  line-height: 1;
+}
+.cal-nav-btn:hover { background: var(--g100); color: var(--g800); }
+.cal-month-label {
+  font-size: 17px; font-weight: 800;
+  min-width: 180px; text-align: center; color: var(--g800);
+}
+.cal-year-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: 14px; font-weight: 600; color: var(--g500);
+  padding: 2px 6px; border-radius: 4px;
+  transition: color 0.15s;
+}
+.cal-year-btn:hover { color: var(--primary); }
+
+/* ── Griglia mensile ── */
+.cal-month-wrap { padding: 12px 12px 4px; }
+.cal-month-grid {
   display: grid;
-  grid-template-columns: 52px repeat(7, 1fr);
-  min-width: 560px;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
 }
-.cal-hdr {
-  background: var(--g50);
-  border-bottom: 2px solid var(--g100);
-  padding: 9px 4px;
-  text-align: center;
+.cal-month-hdr {
+  text-align: center; padding: 6px 0 8px;
   font-size: 11px; font-weight: 700;
-  text-transform: uppercase;
-  color: var(--g500); letter-spacing: 0.3px;
+  text-transform: uppercase; color: var(--g400); letter-spacing: 0.4px;
 }
-.cal-hdr.corner { border-right: 1px solid var(--g100); }
-.cal-time {
-  background: var(--g50);
-  border-right: 1px solid var(--g100);
-  border-bottom: 1px solid var(--g100);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 10px; font-weight: 600; color: var(--g400);
-  min-height: 42px;
+.cal-month-cell {
+  border: 1.5px solid var(--g100); border-radius: 8px;
+  padding: 6px 5px 5px; cursor: pointer; min-height: 62px;
+  transition: border-color 0.15s, background 0.15s;
+  position: relative; overflow: hidden;
 }
-.cal-slot {
-  min-height: 42px;
-  cursor: pointer;
-  border-bottom: 1px solid var(--g100);
-  border-right: 1px solid var(--g100);
+.cal-month-cell:hover { border-color: var(--primary); background: var(--primary-pale); }
+.cal-month-cell.empty { border-color: transparent; background: transparent; cursor: default; pointer-events: none; }
+.cal-month-cell.today { border-color: var(--primary); }
+.cal-month-cell.today .cal-day-num { color: var(--primary); font-weight: 800; }
+.cal-month-cell.selected { border-color: var(--primary); background: var(--primary-pale); box-shadow: 0 0 0 2px rgba(90,158,111,.3); }
+.cal-month-cell.past { opacity: 0.55; }
+.cal-day-num { font-size: 13px; font-weight: 700; color: var(--g700); margin-bottom: 5px; }
+.cal-mini-slots { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; }
+.cal-mini-slot { height: 4px; border-radius: 2px; background: var(--g100); }
+
+/* ── Pannello giorno ── */
+.cal-day-panel {
+  margin: 4px 12px 8px;
+  border: 2px solid var(--primary);
+  border-radius: 10px; overflow: hidden;
+}
+.cal-day-panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 16px; background: var(--primary-pale);
+  border-bottom: 1px solid rgba(90,158,111,.2);
+}
+.cal-day-slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 6px; padding: 10px 12px;
+  max-height: 290px; overflow-y: auto;
+}
+.cal-hour-slot {
+  border: 1.5px solid var(--g100); border-radius: 8px;
+  padding: 8px 12px; cursor: pointer;
+  transition: filter 0.12s, border-color 0.12s;
   background: #fff;
-  transition: filter 0.12s;
-  position: relative;
-  display: flex; align-items: center; justify-content: center;
 }
-.cal-slot:hover { filter: brightness(0.92); }
-.cal-slot.blocked::after {
-  content: '✕';
-  font-size: 12px; font-weight: 800;
-  color: rgba(255,255,255,0.7);
-}
+.cal-hour-slot:hover { filter: brightness(0.93); }
+.cal-hour-slot.blocked { border-color: transparent; }
+.cal-hour-label { font-size: 13px; font-weight: 700; display: block; }
+.cal-hour-status { font-size: 11px; display: block; opacity: 0.75; margin-top: 2px; }
 
 /* Legenda */
 .cal-legend {

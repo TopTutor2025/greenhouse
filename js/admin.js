@@ -1970,11 +1970,17 @@ const CAL_DEFAULT_USERS = [
   { id: 'cal_sascha',   name: 'Sascha',   color: '#3b82f6', slots: [] },
   { id: 'cal_emmanuel', name: 'Emmanuel', color: '#f59e0b', slots: [] },
 ];
-const CAL_DAYS  = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
-const CAL_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+const CAL_MONTHS_IT = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
+                       'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+const CAL_DAYS_IT   = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+const CAL_DAYS_SHORT = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
+const CAL_HOURS     = [8,9,10,11,12,13,14,15,16,17,18,19];
 
-let _calUsers        = [];   // array di { id, name, color, slots[] }
+let _calUsers        = [];
 let _calSelectedUser = null;
+let _calSelectedDay  = null;
+let _calCurrentYear  = new Date().getFullYear();
+let _calCurrentMonth = new Date().getMonth(); // 0-indexed
 let _calInited       = false;
 
 // ── Carica da Supabase / localStorage ────────────────
@@ -1984,10 +1990,8 @@ async function calLoad() {
     if (data && data.length > 0) {
       _calUsers = data;
     } else if (data === null) {
-      // localStorage vuoto → usa default
       _calUsers = JSON.parse(JSON.stringify(CAL_DEFAULT_USERS));
     } else {
-      // Supabase restituisce array vuoto (tabella vuota) → usa default e inserisci
       _calUsers = JSON.parse(JSON.stringify(CAL_DEFAULT_USERS));
       for (const u of _calUsers) await DB.upsertCalUser(u);
     }
@@ -1997,7 +2001,6 @@ async function calLoad() {
   }
 }
 
-// Salva in localStorage come backup (usato solo in modalità locale)
 function calSaveLocal() {
   const slots = {};
   _calUsers.forEach(u => { slots[u.id] = u.slots || []; });
@@ -2006,11 +2009,10 @@ function calSaveLocal() {
 
 // ── Init ──────────────────────────────────────────────
 async function initCalendario() {
-  calSetLoading(true);
+  document.getElementById('cal-users-list').innerHTML =
+    '<p style="font-size:13px;color:var(--g400);padding:6px 4px">Caricamento…</p>';
   await calLoad();
-  calSetLoading(false);
   renderCalUsers();
-
   if (_calSelectedUser) {
     const user = _calUsers.find(u => u.id === _calSelectedUser);
     if (user) { renderCalendar(user); return; }
@@ -2034,17 +2036,9 @@ async function initCalendario() {
         renderCalUsers();
         closeModal('modal-cal-user');
         selectCalUser(newUser.id);
-      } catch(e) {
-        showToast('Errore nel salvataggio', 'error');
-      }
+      } catch(e) { showToast('Errore nel salvataggio', 'error'); }
     });
   }
-}
-
-function calSetLoading(on) {
-  const list = document.getElementById('cal-users-list');
-  if (!list) return;
-  if (on) list.innerHTML = '<p style="font-size:13px;color:var(--g400);padding:6px 4px">Caricamento…</p>';
 }
 
 // ── Render lista soci ─────────────────────────────────
@@ -2064,7 +2058,7 @@ function renderCalUsers() {
         <div class="cal-user-name">${u.name}</div>
         ${blockedCount > 0 ? `<div style="font-size:11px;color:var(--g400)">${blockedCount} slot bloccati</div>` : ''}
       </div>
-      <button class="cal-del-btn" onclick="event.stopPropagation();confirmDeleteCalUser('${u.id}')" title="Elimina socio">🗑</button>
+      <button class="cal-del-btn" onclick="event.stopPropagation();confirmDeleteCalUser('${u.id}')" title="Elimina">🗑</button>
     </div>`;
   }).join('');
 }
@@ -2072,88 +2066,200 @@ function renderCalUsers() {
 // ── Seleziona socio ───────────────────────────────────
 function selectCalUser(userId) {
   _calSelectedUser = userId;
+  _calSelectedDay  = null;
   const user = _calUsers.find(u => u.id === userId);
   if (!user) return;
   renderCalUsers();
   renderCalendar(user);
 }
 
-// ── Render calendario settimanale ─────────────────────
+// ── Render calendario (header + mese + chiude day panel) ─
 function renderCalendar(user) {
   document.getElementById('cal-empty-state').style.display = 'none';
   document.getElementById('cal-view').classList.remove('hidden');
 
-  const slots        = user.slots || [];
-  const slotsSet     = new Set(slots);
-  const blockedCount = slots.length;
-
+  // Header socio
+  const blockedCount = (user.slots || []).length;
   document.getElementById('cal-user-header').innerHTML = `
     <div class="cal-user-header-avatar" style="background:${user.color}">${user.name.charAt(0).toUpperCase()}</div>
     <div>
       <div class="cal-user-header-name">${user.name}</div>
       <div class="cal-user-header-sub">
         ${blockedCount > 0
-          ? `<span style="color:${user.color};font-weight:600">${blockedCount}</span> slot non disponibili · Clicca per bloccare/sbloccare`
-          : 'Tutte le fasce disponibili · Clicca uno slot per bloccarlo'}
+          ? `<span style="color:${user.color};font-weight:600">${blockedCount}</span> slot non disponibili`
+          : 'Nessuno slot bloccato'}
+        · Clicca un giorno per modificare
       </div>
     </div>`;
 
-  const legendBlocked = document.getElementById('cal-legend-blocked');
-  if (legendBlocked) {
-    legendBlocked.innerHTML = `
-      <div class="cal-legend-dot" style="background:${user.color}"></div>
-      <span>Non disponibile</span>`;
-  }
+  // Legenda
+  const lb = document.getElementById('cal-legend-blocked');
+  if (lb) lb.innerHTML = `<div class="cal-legend-dot" style="background:${user.color}"></div><span>Non disponibile</span>`;
 
-  let html = '<div class="cal-hdr corner"></div>';
-  CAL_DAYS.forEach(d => { html += `<div class="cal-hdr">${d}</div>`; });
-
-  CAL_HOURS.forEach(h => {
-    html += `<div class="cal-time">${String(h).padStart(2,'0')}:00</div>`;
-    for (let d = 0; d < 7; d++) {
-      const key       = `${d}-${h}`;
-      const isBlocked = slotsSet.has(key);
-      const bgStyle   = isBlocked ? `background:${user.color};` : '';
-      const tooltip   = `${CAL_DAYS[d]} ${String(h).padStart(2,'0')}:00–${String(h+1).padStart(2,'0')}:00`;
-      html += `<div class="cal-slot${isBlocked ? ' blocked' : ''}" style="${bgStyle}"
-                    onclick="toggleCalSlot('${user.id}',${d},${h})"
-                    title="${isBlocked ? '🔴 ' : '🟢 '}${tooltip}"></div>`;
-    }
-  });
-
-  document.getElementById('cal-grid').innerHTML = html;
+  renderCalMonthNav(user);
+  renderCalMonthGrid(user);
+  if (_calSelectedDay) renderCalDayPanel(user, _calSelectedDay);
+  else document.getElementById('cal-day-panel').classList.add('hidden');
 }
 
-// ── Toggle slot ───────────────────────────────────────
-async function toggleCalSlot(userId, day, hour) {
+// ── Navigazione mese ──────────────────────────────────
+function renderCalMonthNav(user) {
+  const nav = document.getElementById('cal-month-nav');
+  if (!nav) return;
+  nav.innerHTML = `
+    <button class="cal-nav-btn" onclick="calChangeMonth('${user.id}',-1)">‹</button>
+    <span class="cal-month-label">${CAL_MONTHS_IT[_calCurrentMonth]} ${_calCurrentYear}</span>
+    <button class="cal-nav-btn" onclick="calChangeMonth('${user.id}',1)">›</button>`;
+}
+
+function calChangeMonth(userId, delta) {
+  _calCurrentMonth += delta;
+  if (_calCurrentMonth > 11) { _calCurrentMonth = 0; _calCurrentYear++; }
+  if (_calCurrentMonth < 0)  { _calCurrentMonth = 11; _calCurrentYear--; }
+  _calSelectedDay = null;
+  const user = _calUsers.find(u => u.id === userId);
+  if (user) { renderCalMonthNav(user); renderCalMonthGrid(user); document.getElementById('cal-day-panel').classList.add('hidden'); }
+}
+
+// ── Griglia mensile ───────────────────────────────────
+function renderCalMonthGrid(user) {
+  const grid = document.getElementById('cal-month-grid');
+  if (!grid) return;
+
+  const slots    = user.slots || [];
+  const slotsSet = new Set(slots);
+
+  const today    = new Date();
+  const todayStr = _calDateStr(today.getFullYear(), today.getMonth() + 1, today.getDate());
+
+  // Primo giorno del mese e quanti giorni
+  const firstDate = new Date(_calCurrentYear, _calCurrentMonth, 1);
+  const daysInMonth = new Date(_calCurrentYear, _calCurrentMonth + 1, 0).getDate();
+
+  // Offset: lunedì = 0 (JS: dom=0 → lun=1)
+  let startDow = firstDate.getDay(); // 0=dom
+  startDow = startDow === 0 ? 6 : startDow - 1; // converti in lun=0..dom=6
+
+  let html = '';
+
+  // Header giorni
+  CAL_DAYS_SHORT.forEach(d => { html += `<div class="cal-month-hdr">${d}</div>`; });
+
+  // Celle vuote prima del 1°
+  for (let i = 0; i < startDow; i++) html += '<div class="cal-month-cell empty"></div>';
+
+  // Giorni
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr  = _calDateStr(_calCurrentYear, _calCurrentMonth + 1, d);
+    const isToday  = dateStr === todayStr;
+    const isSel    = dateStr === _calSelectedDay;
+    const isPast   = dateStr < todayStr;
+
+    // Mini indicatori orari
+    const miniSlots = CAL_HOURS.map(h => {
+      const key       = `${dateStr}-${String(h).padStart(2,'0')}`;
+      const isBlocked = slotsSet.has(key);
+      return `<div class="cal-mini-slot" style="${isBlocked ? `background:${user.color}` : ''}"></div>`;
+    }).join('');
+
+    const classes = ['cal-month-cell',
+      isToday ? 'today' : '',
+      isSel   ? 'selected' : '',
+      isPast  ? 'past' : ''
+    ].filter(Boolean).join(' ');
+
+    html += `
+      <div class="${classes}" onclick="openCalDay('${user.id}','${dateStr}')">
+        <div class="cal-day-num">${d}</div>
+        <div class="cal-mini-slots">${miniSlots}</div>
+      </div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+// Helpers
+function _calDateStr(y, m, d) {
+  return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+function _calNiceDate(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dow = new Date(y, m - 1, d).getDay();
+  return `${CAL_DAYS_IT[dow]} ${d} ${CAL_MONTHS_IT[m-1]} ${y}`;
+}
+
+// ── Apri pannello giorno ──────────────────────────────
+function openCalDay(userId, dateStr) {
+  const user = _calUsers.find(u => u.id === userId);
+  if (!user) return;
+  _calSelectedDay = dateStr;
+  renderCalMonthGrid(user); // aggiorna selezione nella griglia
+  renderCalDayPanel(user, dateStr);
+}
+
+function renderCalDayPanel(user, dateStr) {
+  const panel = document.getElementById('cal-day-panel');
+  panel.classList.remove('hidden');
+
+  const slots    = user.slots || [];
+  const slotsSet = new Set(slots);
+
+  document.getElementById('cal-day-panel-header').innerHTML = `
+    <span style="font-weight:700;font-size:14px">📅 ${_calNiceDate(dateStr)}</span>
+    <button class="btn btn-ghost btn-sm" onclick="closeCalDayPanel('${user.id}')">✕ Chiudi</button>`;
+
+  document.getElementById('cal-day-slots').innerHTML = CAL_HOURS.map(h => {
+    const key       = `${dateStr}-${String(h).padStart(2,'0')}`;
+    const isBlocked = slotsSet.has(key);
+    const bg        = isBlocked ? `background:${user.color};color:#fff;border-color:transparent;` : '';
+    return `
+      <div class="cal-hour-slot${isBlocked ? ' blocked' : ''}" style="${bg}"
+           onclick="toggleCalSlotKey('${user.id}','${key}','${dateStr}')">
+        <span class="cal-hour-label">${String(h).padStart(2,'0')}:00 – ${String(h+1).padStart(2,'00')}:00</span>
+        <span class="cal-hour-status">${isBlocked ? '🔴 Non disponibile' : '🟢 Disponibile'}</span>
+      </div>`;
+  }).join('');
+
+  // Scroll al pannello
+  setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+}
+
+function closeCalDayPanel(userId) {
+  _calSelectedDay = null;
+  document.getElementById('cal-day-panel').classList.add('hidden');
+  const user = _calUsers.find(u => u.id === userId);
+  if (user) renderCalMonthGrid(user);
+}
+
+// ── Toggle slot per chiave data-ora ──────────────────
+async function toggleCalSlotKey(userId, key, dateStr) {
   const user = _calUsers.find(u => u.id === userId);
   if (!user) return;
   if (!user.slots) user.slots = [];
-
-  const key = `${day}-${hour}`;
   const idx = user.slots.indexOf(key);
   if (idx === -1) { user.slots.push(key); } else { user.slots.splice(idx, 1); }
 
-  // Aggiorna UI immediatamente (ottimistic update)
-  renderCalendar(user);
+  // Ottimistic UI
+  renderCalDayPanel(user, dateStr);
+  renderCalMonthGrid(user);
   renderCalUsers();
 
-  // Salva su Supabase / localStorage in background
+  // Salva
   try {
     await DB.updateCalSlots(userId, user.slots);
     calSaveLocal();
   } catch(e) {
-    console.warn('toggleCalSlot save error', e);
+    console.warn('toggleCalSlotKey error', e);
     showToast('Errore nel salvataggio slot', 'error');
   }
 }
 
 // ── Aggiungi socio ────────────────────────────────────
 function openAddCalUser() {
-  const nameInput = document.getElementById('cal-u-nome');
-  if (nameInput) nameInput.value = '';
-  const firstRadio = document.querySelector('input[name="cal-color"]');
-  if (firstRadio) firstRadio.checked = true;
+  const n = document.getElementById('cal-u-nome');
+  if (n) n.value = '';
+  const r = document.querySelector('input[name="cal-color"]');
+  if (r) r.checked = true;
   document.getElementById('modal-cal-user').classList.add('active');
 }
 
@@ -2163,7 +2269,7 @@ function confirmDeleteCalUser(userId) {
   if (!user) return;
   showConfirm(
     `Elimina ${user.name}`,
-    `Vuoi eliminare ${user.name} dal calendario? Tutti i suoi slot verranno persi.`,
+    `Vuoi eliminare ${user.name}? Tutti i suoi slot verranno persi.`,
     () => deleteCalUser(userId)
   );
 }
@@ -2174,11 +2280,10 @@ async function deleteCalUser(userId) {
     calSaveLocal();
     if (_calSelectedUser === userId) {
       _calSelectedUser = null;
+      _calSelectedDay  = null;
       document.getElementById('cal-empty-state').style.display = '';
       document.getElementById('cal-view').classList.add('hidden');
     }
     renderCalUsers();
-  } catch(e) {
-    showToast('Errore durante l\'eliminazione', 'error');
-  }
+  } catch(e) { showToast("Errore durante l'eliminazione", 'error'); }
 }

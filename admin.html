@@ -403,12 +403,20 @@
           <div id="cal-empty-state" style="padding:60px 20px;text-align:center">
             <div style="font-size:48px;margin-bottom:12px">📅</div>
             <h3 style="font-size:16px;font-weight:700;margin-bottom:6px">Seleziona un socio</h3>
-            <p style="color:var(--g500);font-size:14px">Clicca su un nome per visualizzare il suo calendario settimanale.</p>
+            <p style="color:var(--g500);font-size:14px">Clicca su un nome per visualizzare il suo calendario.</p>
           </div>
           <div id="cal-view" class="hidden">
             <div class="cal-user-header" id="cal-user-header"></div>
-            <div class="cal-grid-wrap">
-              <div class="cal-grid" id="cal-grid"></div>
+            <!-- Navigazione mese -->
+            <div class="cal-month-nav" id="cal-month-nav"></div>
+            <!-- Griglia mensile -->
+            <div class="cal-month-wrap">
+              <div class="cal-month-grid" id="cal-month-grid"></div>
+            </div>
+            <!-- Pannello giorno (appare quando si clicca un giorno) -->
+            <div class="cal-day-panel hidden" id="cal-day-panel">
+              <div class="cal-day-panel-header" id="cal-day-panel-header"></div>
+              <div class="cal-day-slots" id="cal-day-slots"></div>
             </div>
             <div class="cal-legend">
               <div class="cal-legend-item">
