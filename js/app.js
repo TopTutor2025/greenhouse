@@ -711,13 +711,16 @@ function mapPreventivoFromDb(r) {
   return { id: r.id, numero: r.numero, status: r.status, createdAt: r.created_at, ...(r.dati || {}) };
 }
 function mapPreventivoToDb(f) {
-  return {
-    cliente_nome: f.cliente?.nome || null,
-    data: f.data || null,
-    status: f.status || 'bozza',
-    totale: f.totaleIvato || f.totale || 0,
-    dati: { ...f }
-  };
+  const r = {};
+  if (f.status    !== undefined) r.status      = f.status || 'bozza';
+  if (f.data      !== undefined) r.data        = f.data || null;
+  if (f.cliente   !== undefined) r.cliente_nome = f.cliente?.nome || null;
+  if (f.totaleIvato !== undefined || f.totale !== undefined)
+    r.totale = f.totaleIvato || f.totale || 0;
+  // Salva dati completi solo quando c'è un salvataggio reale (non un semplice cambio stato)
+  if (f.cliente !== undefined || f.voci !== undefined)
+    r.dati = { ...f };
+  return r;
 }
 
 // ─── Field mappers — Fatture ───────────────────────
