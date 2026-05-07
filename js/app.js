@@ -739,8 +739,9 @@ function mapSupplierToDb(f) {
 // ─── Field mappers — Preventivi ────────────────────
 function mapPreventivoFromDb(r) {
   if (!r) return null;
-  // I campi del DB (status, numero) devono avere precedenza su quelli in dati
-  return { ...(r.dati || {}), id: r.id, numero: r.numero, status: r.status, createdAt: r.created_at };
+  // status: colonna DB ha precedenza, poi dati, poi default 'bozza'
+  const status = r.status || (r.dati || {}).status || 'bozza';
+  return { ...(r.dati || {}), id: r.id, numero: r.numero, status, createdAt: r.created_at };
 }
 function mapPreventivoToDb(f) {
   const r = {};

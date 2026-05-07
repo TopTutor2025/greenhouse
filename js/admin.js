@@ -1074,10 +1074,20 @@ function _prevStatusSelect(id, current) {
 }
 
 async function quickUpdatePrevStatus(id, status) {
-  await DB.updatePreventivo(id, { status });
   const p = _allPreventivi.find(x => x.id === id);
-  if (p) p.status = status;
-  showToast('Stato aggiornato', 'success');
+  if (!p) return;
+  const oldStatus = p.status;
+  p.status = status;       // aggiornamento ottimistico in memoria
+  filterPreventivi();      // aggiorna subito la UI
+  try {
+    await DB.updatePreventivo(id, { status });
+    showToast('Stato aggiornato', 'success');
+  } catch(e) {
+    console.warn('Errore aggiornamento stato:', e);
+    p.status = oldStatus;  // ripristina in caso di errore
+    filterPreventivi();
+    showToast('Errore nel salvataggio dello stato', 'error');
+  }
 }
 
 function filterPreventivi() {
@@ -1170,7 +1180,6 @@ async function editPreventivo(id) {
   document.getElementById('pv-indirizzo').value = p.cliente?.indirizzo || '';
   document.getElementById('pv-citta').value     = p.cliente?.citta     || '';
   document.getElementById('pv-provincia').value = p.cliente?.provincia || '';
-  document.getElementById('pv-note').value       = p.note        || '';
   document.getElementById('pv-status').value     = p.status      || 'bozza';
   document.getElementById('pv-iva').value        = String(p.ivaPct === 'esclusa' ? 'esclusa' : (p.ivaPct ?? 22));
   document.getElementById('pv-magg').value       = String(p.maggiorazione ?? 0);
@@ -1597,8 +1606,7 @@ async function openSettings() {
   document.getElementById('modal-settings').classList.add('active');
 }
 
-document.getElementById('form-settings')?.addEventListener('submit', async function(e) {
-  e.preventDefault();
+async function doSaveSettings() {
   await DB.saveSettings({
     ragioneSociale: document.getElementById('set-ragione').value.trim(),
     piva:           document.getElementById('set-piva').value.trim(),
@@ -1609,7 +1617,7 @@ document.getElementById('form-settings')?.addEventListener('submit', async funct
   });
   closeModal('modal-settings');
   showToast('Impostazioni salvate', 'success');
-});
+}
 
 // ── LISTINO PREZZI ───────────────────────────────────
 async function openListino() {
