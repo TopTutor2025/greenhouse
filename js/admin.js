@@ -1180,8 +1180,11 @@ async function editPreventivo(id) {
   document.getElementById('pv-telefono').value  = p.cliente?.telefono  || '';
   document.getElementById('pv-indirizzo').value = p.cliente?.indirizzo || '';
   document.getElementById('pv-citta').value     = p.cliente?.citta     || '';
-  document.getElementById('pv-provincia').value = p.cliente?.provincia || '';
-  document.getElementById('pv-status').value     = p.status      || 'bozza';
+  document.getElementById('pv-provincia').value        = p.cliente?.provincia        || '';
+  document.getElementById('pv-sede-indirizzo').value   = p.sedeLavoro?.indirizzo     || '';
+  document.getElementById('pv-sede-citta').value       = p.sedeLavoro?.citta         || '';
+  document.getElementById('pv-sede-provincia').value   = p.sedeLavoro?.provincia     || '';
+  document.getElementById('pv-status').value           = p.status                    || 'bozza';
   document.getElementById('pv-iva').value        = String(p.ivaPct === 'esclusa' ? 'esclusa' : (p.ivaPct ?? 22));
   document.getElementById('pv-magg').value       = String(p.maggiorazione ?? 0);
   document.getElementById('pv-sconto').value     = String(p.sconto       ?? 0);
@@ -1192,7 +1195,8 @@ async function editPreventivo(id) {
 }
 
 function clearPrevForm() {
-  ['pv-nome','pv-azienda','pv-email','pv-telefono','pv-indirizzo','pv-citta','pv-provincia'].forEach(id => {
+  ['pv-nome','pv-azienda','pv-email','pv-telefono','pv-indirizzo','pv-citta','pv-provincia',
+   'pv-sede-indirizzo','pv-sede-citta','pv-sede-provincia'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   document.getElementById('pv-status').value = 'bozza';
@@ -1325,6 +1329,11 @@ async function savePreventivo(andPrint) {
       indirizzo: document.getElementById('pv-indirizzo').value.trim(),
       citta:     document.getElementById('pv-citta').value.trim(),
       provincia: document.getElementById('pv-provincia').value.trim(),
+    },
+    sedeLavoro: {
+      indirizzo: document.getElementById('pv-sede-indirizzo').value.trim(),
+      citta:     document.getElementById('pv-sede-citta').value.trim(),
+      provincia: document.getElementById('pv-sede-provincia').value.trim(),
     },
     voci:          _preventivoVoci.map(v => ({ ...v })),
     maggiorazione: maggPct,
@@ -1466,6 +1475,15 @@ async function printPreventivo(id) {
       ${p.cliente?.citta    ? `<div><label>Città</label>${escHtml(p.cliente.citta)}${p.cliente.provincia?' ('+p.cliente.provincia+')':''}</div>` : ''}
     </div>
   </div>
+
+  ${p.sedeLavoro?.indirizzo ? `
+  <div class="pv-section">
+    <div class="pv-section-title">Sede del Lavoro</div>
+    <div style="font-size:10.5pt;line-height:1.7">
+      <strong>${escHtml(p.sedeLavoro.indirizzo)}</strong>
+      ${p.sedeLavoro.citta ? `<br>${escHtml(p.sedeLavoro.citta)}${p.sedeLavoro.provincia ? ' (' + escHtml(p.sedeLavoro.provincia) + ')' : ''}` : ''}
+    </div>
+  </div>` : ''}
 
   <div class="pv-section">
     <div class="pv-section-title">Voci di Preventivo</div>
