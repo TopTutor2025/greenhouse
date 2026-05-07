@@ -419,6 +419,33 @@
 }
 
 /* ═══════════════════════════════════════════════
+   NOTE PREIMPOSTATE
+═══════════════════════════════════════════════ */
+.note-preset-chip {
+  display: inline-flex; align-items: center;
+  background: var(--primary-pale); color: var(--primary-d);
+  border: 1.5px solid rgba(90,158,111,.35);
+  border-radius: 100px; padding: 4px 12px;
+  font-size: 12.5px; font-weight: 500; cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  font-family: inherit; max-width: 260px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.note-preset-chip:hover {
+  background: rgba(90,158,111,.2);
+  border-color: var(--primary);
+}
+.note-preset-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px; border: 1px solid var(--g100);
+  border-radius: 8px; margin-bottom: 8px; background: var(--g50);
+}
+.note-preset-text {
+  flex: 1; font-size: 13px; color: var(--g700);
+  line-height: 1.5; white-space: pre-wrap; word-break: break-word;
+}
+
+/* ═══════════════════════════════════════════════
    CALENDARIO DISPONIBILITÀ SOCI
 ═══════════════════════════════════════════════ */
 .cal-layout {

@@ -1172,11 +1172,12 @@ async function editPreventivo(id) {
   document.getElementById('pv-provincia').value = p.cliente?.provincia || '';
   document.getElementById('pv-note').value       = p.note        || '';
   document.getElementById('pv-status').value     = p.status      || 'bozza';
-  document.getElementById('pv-iva').value        = String(p.ivaPct     ?? 22);
+  document.getElementById('pv-iva').value        = String(p.ivaPct === 'esclusa' ? 'esclusa' : (p.ivaPct ?? 22));
   document.getElementById('pv-magg').value       = String(p.maggiorazione ?? 0);
   document.getElementById('pv-sconto').value     = String(p.sconto       ?? 0);
   refreshVociTable();
   recalcTotali();
+  renderNotePresetChips();
   showPrevFormView();
 }
 
@@ -1189,6 +1190,7 @@ function clearPrevForm() {
   document.getElementById('pv-magg').value   = '0';
   document.getElementById('pv-sconto').value = '0';
   recalcTotali();
+  renderNotePresetChips();
 }
 
 // ── Voci (line items) ────────────────────────────────
@@ -1257,30 +1259,31 @@ function recalcTotali() {
   const base      = _preventivoVoci.reduce((s, v) => s + (v.quantita||1) * (v.prezzoUnitario||0), 0);
   const maggPct   = parseFloat(document.getElementById('pv-magg')?.value   || '0') || 0;
   const scontoPct = parseFloat(document.getElementById('pv-sconto')?.value || '0') || 0;
-  const ivaPct    = parseInt(document.getElementById('pv-iva')?.value       || '22');
+  const ivaVal    = document.getElementById('pv-iva')?.value || '22';
+  const ivaEsclusa = ivaVal === 'esclusa';
+  const ivaPct    = ivaEsclusa ? 0 : (parseInt(ivaVal) || 0);
 
-  const conMagg     = base * (1 + maggPct / 100);
-  const scontoAmt   = conMagg * scontoPct / 100;
-  const imponibile  = conMagg - scontoAmt;
-  const ivaAmt      = imponibile * ivaPct / 100;
-  const totale      = imponibile + ivaAmt;
+  const conMagg    = base * (1 + maggPct / 100);
+  const scontoAmt  = conMagg * scontoPct / 100;
+  const imponibile = conMagg - scontoAmt;
+  const ivaAmt     = imponibile * ivaPct / 100;
+  const totale     = imponibile + ivaAmt;
 
   const setEl = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
   setEl('pv-subtotale', fmtEur(base));
-  // show/hide maggiorazione row
   const maggRow = document.getElementById('pv-magg-row');
   if (maggRow) maggRow.style.display = maggPct > 0 ? 'flex' : 'none';
   setEl('pv-magg-amt', '+' + fmtEur(conMagg - base) + ' (' + maggPct + '%)');
-  // show/hide sconto row
   const scontoRow = document.getElementById('pv-sconto-row');
   if (scontoRow) scontoRow.style.display = scontoPct > 0 ? 'flex' : 'none';
   setEl('pv-sconto-amt', '-' + fmtEur(scontoAmt) + ' (' + scontoPct + '%)');
-  // show/hide imponibile row
   const impRow = document.getElementById('pv-imponibile-row');
   if (impRow) impRow.style.display = (maggPct > 0 || scontoPct > 0) ? 'flex' : 'none';
   setEl('pv-imponibile', fmtEur(imponibile));
+  // Riga IVA: nascosta se esclusa
+  const ivaSelectRow = document.getElementById('pv-iva')?.closest('.prev-totali-row');
+  // Totale: se IVA esclusa mostra imponibile = totale
   setEl('pv-totale', fmtEur(totale));
-  // update row totals in table
   document.querySelectorAll('#prev-voci-tbody tr').forEach((row, i) => {
     const v = _preventivoVoci[i];
     if (v) { const cell = row.cells[5]; if (cell) cell.textContent = fmtEur((v.quantita||1)*(v.prezzoUnitario||0)); }
@@ -1295,7 +1298,9 @@ async function savePreventivo(andPrint) {
   const base        = _preventivoVoci.reduce((s, v) => s + (v.quantita||1)*(v.prezzoUnitario||0), 0);
   const maggPct     = parseFloat(document.getElementById('pv-magg').value || '0') || 0;
   const scontoPct   = parseFloat(document.getElementById('pv-sconto').value || '0') || 0;
-  const ivaPct      = parseInt(document.getElementById('pv-iva').value || '22');
+  const ivaVal      = document.getElementById('pv-iva').value || '22';
+  const ivaEsclusa  = ivaVal === 'esclusa';
+  const ivaPct      = ivaEsclusa ? 0 : (parseInt(ivaVal) || 0);
   const conMagg     = base * (1 + maggPct / 100);
   const scontoAmt   = conMagg * scontoPct / 100;
   const imponibile  = conMagg - scontoAmt;
@@ -1316,7 +1321,7 @@ async function savePreventivo(andPrint) {
     sconto:        scontoPct,
     totaleBase:    base,
     totaleNetto:   imponibile,
-    ivaPct:        ivaPct,
+    ivaPct:        ivaEsclusa ? 'esclusa' : ivaPct,
     totaleIvato:   totaleIvato,
     note:          document.getElementById('pv-note').value.trim(),
     status:        document.getElementById('pv-status').value,
@@ -1366,7 +1371,8 @@ async function printPreventivo(id) {
   const scontoPct    = p.sconto || 0;
   const scontoAmt    = subtotalePDF * scontoPct / 100;
   const imponibile   = subtotalePDF - scontoAmt;
-  const ivaPct       = p.ivaPct ?? 22;
+  const ivaEsclusa   = p.ivaPct === 'esclusa';
+  const ivaPct       = ivaEsclusa ? 0 : (p.ivaPct ?? 22);
   const ivaAmt       = imponibile * ivaPct / 100;
   const totalePDF    = imponibile + ivaAmt;
 
@@ -1454,7 +1460,9 @@ async function printPreventivo(id) {
     <div class="pv-totali">
       <div class="pv-totali-row"><span>Subtotale</span><span>${fmt(subtotalePDF)}</span></div>
       ${scontoRow}
-      <div class="pv-totali-row"><span>IVA ${ivaPct}%</span><span>${fmt(ivaAmt)}</span></div>
+      ${ivaEsclusa
+        ? `<div class="pv-totali-row" style="color:#888;font-style:italic"><span>IVA</span><span>Esclusa</span></div>`
+        : `<div class="pv-totali-row"><span>IVA ${ivaPct}%</span><span>${fmt(ivaAmt)}</span></div>`}
       <div class="pv-totali-finale"><span>TOTALE</span><span>${fmt(totalePDF)}</span></div>
     </div>
   </div>
@@ -1475,6 +1483,93 @@ async function printPreventivo(id) {
   a.click();
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+// ═══════════════════════════════════════════════════════
+//  NOTE PREIMPOSTATE
+// ═══════════════════════════════════════════════════════
+
+const NOTE_PRESET_KEY = 'gh_note_preset';
+
+function loadNotePresets() {
+  try { return JSON.parse(localStorage.getItem(NOTE_PRESET_KEY) || '[]'); }
+  catch { return []; }
+}
+function saveNotePresets(list) {
+  localStorage.setItem(NOTE_PRESET_KEY, JSON.stringify(list));
+}
+
+// Render chips nella form preventivo
+function renderNotePresetChips() {
+  const wrap = document.getElementById('pv-note-presets');
+  if (!wrap) return;
+  const presets = loadNotePresets();
+  if (!presets.length) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = `
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">
+      ${presets.map(p => `
+        <button type="button" class="note-preset-chip" onclick="insertNotePreset(${p.id})" title="Clicca per inserire nel testo">
+          ${escHtml(p.text.length > 40 ? p.text.slice(0,40) + '…' : p.text)}
+        </button>`).join('')}
+    </div>`;
+}
+
+// Inserisce il testo nel textarea note
+function insertNotePreset(id) {
+  const presets = loadNotePresets();
+  const p = presets.find(x => x.id === id);
+  if (!p) return;
+  const ta = document.getElementById('pv-note');
+  if (!ta) return;
+  const cur = ta.value;
+  ta.value = cur ? cur + '\n\n' + p.text : p.text;
+  ta.focus();
+  showToast('Nota inserita', 'success');
+}
+
+// Apre il modal di gestione
+function openNotePreset() {
+  renderNotePresetList();
+  document.getElementById('new-note-preset-text').value = '';
+  document.getElementById('modal-note-preset').classList.add('active');
+}
+
+// Render lista nel modal
+function renderNotePresetList() {
+  const presets = loadNotePresets();
+  const list = document.getElementById('note-preset-list');
+  if (!list) return;
+  if (!presets.length) {
+    list.innerHTML = '<p style="font-size:13px;color:var(--g400);text-align:center;padding:20px 0">Nessuna nota preimpostata.<br>Aggiungine una qui sotto.</p>';
+    return;
+  }
+  list.innerHTML = presets.map(p => `
+    <div class="note-preset-item">
+      <span class="note-preset-text">${escHtml(p.text)}</span>
+      <button class="btn btn-sm btn-danger-outline" type="button" onclick="deleteNotePreset(${p.id})" title="Elimina">✕</button>
+    </div>`).join('');
+}
+
+// Aggiunge una nota
+function addNotePreset() {
+  const text = document.getElementById('new-note-preset-text').value.trim();
+  if (!text) { showToast('Inserisci il testo della nota', 'error'); return; }
+  const presets = loadNotePresets();
+  const id = Date.now();
+  presets.push({ id, text });
+  saveNotePresets(presets);
+  document.getElementById('new-note-preset-text').value = '';
+  renderNotePresetList();
+  renderNotePresetChips();
+  showToast('Nota aggiunta', 'success');
+}
+
+// Elimina una nota
+function deleteNotePreset(id) {
+  const presets = loadNotePresets().filter(p => p.id !== id);
+  saveNotePresets(presets);
+  renderNotePresetList();
+  renderNotePresetChips();
 }
 
 // ── IMPOSTAZIONI AZIENDA ────────────────────────────

@@ -274,7 +274,12 @@
         <!-- Note + Totali -->
         <div class="prev-bottom-grid">
           <div class="card prev-card-section">
-            <h3 class="prev-section-title">📝 Note</h3>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+              <h3 class="prev-section-title" style="margin:0">📝 Note</h3>
+              <button type="button" class="btn btn-sm btn-ghost" onclick="openNotePreset()" style="font-size:12px">⚙️ Gestisci preimpostate</button>
+            </div>
+            <!-- Note preimpostate -->
+            <div id="pv-note-presets" style="margin-bottom:10px"></div>
             <textarea id="pv-note" class="form-control" rows="4" placeholder="Note per il cliente, condizioni, scadenza offerta..."></textarea>
           </div>
           <div class="card prev-card-section prev-totali">
@@ -296,7 +301,8 @@
             <div class="prev-totali-row" id="pv-imponibile-row" style="display:none"><span>Imponibile</span><span id="pv-imponibile">€ 0,00</span></div>
             <div class="prev-totali-row">
               <span>IVA</span>
-              <select id="pv-iva" class="form-control" style="width:100px;font-size:13px" onchange="recalcTotali()">
+              <select id="pv-iva" class="form-control" style="width:130px;font-size:13px" onchange="recalcTotali()">
+                <option value="esclusa">IVA esclusa</option>
                 <option value="0">Esente (0%)</option>
                 <option value="10">10%</option>
                 <option value="22" selected>22%</option>
@@ -847,6 +853,23 @@
     <div class="modal-footer">
       <div id="quote-detail-actions"></div>
       <button class="btn btn-ghost" onclick="document.getElementById('modal-quote-detail').classList.remove('active')">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Note Preimpostate -->
+<div class="modal-overlay" id="modal-note-preset">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">📝 Note Preimpostate</h3>
+      <button class="modal-close" onclick="closeModal('modal-note-preset')">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--g500);margin-bottom:16px">Crea testi che puoi inserire rapidamente nei preventivi con un click.</p>
+    <div id="note-preset-list" style="max-height:280px;overflow-y:auto;margin-bottom:16px"></div>
+    <div style="border-top:1px solid var(--border);padding-top:16px">
+      <label class="form-label">Aggiungi nuova nota</label>
+      <textarea id="new-note-preset-text" class="form-control" rows="3" placeholder="Testo della nota preimpostata..."></textarea>
+      <button type="button" class="btn btn-primary btn-sm" style="margin-top:10px" onclick="addNotePreset()">+ Aggiungi</button>
     </div>
   </div>
 </div>
