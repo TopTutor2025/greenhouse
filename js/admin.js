@@ -1058,6 +1058,7 @@ function fmtEur(n) {
 
 // ── List view ────────────────────────────────────────
 async function renderPreventivi() {
+  await initNoteVoci();
   _listinoCache = await DB.getListino();
   const all = await DB.getPreventivi();
   _allPreventivi = all;
@@ -1511,15 +1512,14 @@ async function printPreventivo(id) {
 //  VOCI NOTE PREVENTIVO
 // ═══════════════════════════════════════════════════════
 
-const NOTE_VOCI_KEY = 'gh_note_voci';
+let _noteVociCache = [];
 
-function loadNotaVoci() {
-  try { return JSON.parse(localStorage.getItem(NOTE_VOCI_KEY) || '[]'); }
-  catch { return []; }
+async function initNoteVoci() {
+  try { _noteVociCache = await DB.getNoteVoci(); }
+  catch(e) { console.warn('initNoteVoci:', e); _noteVociCache = []; }
 }
-function saveNotaVoci(list) {
-  localStorage.setItem(NOTE_VOCI_KEY, JSON.stringify(list));
-}
+
+function loadNotaVoci() { return _noteVociCache; }
 
 // ── Checklist nella form preventivo ──────────────────
 function renderNoteChecklist(selectedTexts = []) {
@@ -1578,26 +1578,32 @@ function renderNoteVociList() {
     </div>`).join('');
 }
 
-function addNotaVoce() {
+async function addNotaVoce() {
   const text = document.getElementById('new-nota-voce-text')?.value.trim();
   if (!text) { showToast('Inserisci il testo della voce', 'error'); return; }
-  const voci = loadNotaVoci();
-  voci.push({ id: Date.now(), text });
-  saveNotaVoci(voci);
-  document.getElementById('new-nota-voce-text').value = '';
-  renderNoteVociList();
-  // Aggiorna la checklist mantenendo le selezioni correnti
-  const selectedTexts = getSelectedNoteTexts();
-  renderNoteChecklist(selectedTexts);
-  showToast('Voce aggiunta', 'success');
+  try {
+    const item = await DB.createNotaVoce(text);
+    _noteVociCache.push(item);
+    document.getElementById('new-nota-voce-text').value = '';
+    renderNoteVociList();
+    renderNoteChecklist(getSelectedNoteTexts());
+    showToast('Voce aggiunta', 'success');
+  } catch(e) {
+    console.error(e);
+    showToast('Errore nel salvataggio', 'error');
+  }
 }
 
-function deleteNotaVoce(id) {
-  const voci = loadNotaVoci().filter(v => v.id !== id);
-  saveNotaVoci(voci);
-  renderNoteVociList();
-  const selectedTexts = getSelectedNoteTexts();
-  renderNoteChecklist(selectedTexts);
+async function deleteNotaVoce(id) {
+  try {
+    await DB.deleteNotaVoce(id);
+    _noteVociCache = _noteVociCache.filter(v => String(v.id) !== String(id));
+    renderNoteVociList();
+    renderNoteChecklist(getSelectedNoteTexts());
+  } catch(e) {
+    console.error(e);
+    showToast("Errore nell'eliminazione", 'error');
+  }
 }
 
 // ── IMPOSTAZIONI AZIENDA ────────────────────────────

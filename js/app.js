@@ -336,6 +336,36 @@ const DB = {
   async getSettings()     { return JSON.parse(localStorage.getItem('gh_settings') || '{}'); },
   async saveSettings(d)   { localStorage.setItem('gh_settings', JSON.stringify(d)); return d; },
 
+  // ── Note Voci Preventivo ──
+  async getNoteVoci() {
+    if (USE_LOCAL) {
+      try { return JSON.parse(localStorage.getItem('gh_note_voci') || '[]'); } catch { return []; }
+    }
+    const { data } = await sb.from('note_voci').select('id, text').order('created_at');
+    return data || [];
+  },
+  async createNotaVoce(text) {
+    if (USE_LOCAL) {
+      const list = JSON.parse(localStorage.getItem('gh_note_voci') || '[]');
+      const item = { id: Date.now(), text };
+      list.push(item);
+      localStorage.setItem('gh_note_voci', JSON.stringify(list));
+      return item;
+    }
+    const { data, error } = await sb.from('note_voci').insert({ text }).select('id, text').single();
+    if (error) throw error;
+    return { id: data.id, text: data.text };
+  },
+  async deleteNotaVoce(id) {
+    if (USE_LOCAL) {
+      const list = JSON.parse(localStorage.getItem('gh_note_voci') || '[]');
+      localStorage.setItem('gh_note_voci', JSON.stringify(list.filter(v => String(v.id) !== String(id))));
+      return;
+    }
+    const { error } = await sb.from('note_voci').delete().eq('id', id);
+    if (error) throw error;
+  },
+
   // ── Listino Prezzi ──
   async getListino() {
     if (USE_LOCAL) return _localDB.getListino();
