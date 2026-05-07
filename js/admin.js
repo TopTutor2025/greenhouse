@@ -1177,12 +1177,12 @@ async function editPreventivo(id) {
   document.getElementById('pv-sconto').value     = String(p.sconto       ?? 0);
   refreshVociTable();
   recalcTotali();
-  renderNotePresetChips();
+  renderNoteChecklist(p.noteVoci || (p.note ? [p.note] : []));
   showPrevFormView();
 }
 
 function clearPrevForm() {
-  ['pv-nome','pv-azienda','pv-email','pv-telefono','pv-indirizzo','pv-citta','pv-provincia','pv-note'].forEach(id => {
+  ['pv-nome','pv-azienda','pv-email','pv-telefono','pv-indirizzo','pv-citta','pv-provincia'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   document.getElementById('pv-status').value = 'bozza';
@@ -1190,7 +1190,7 @@ function clearPrevForm() {
   document.getElementById('pv-magg').value   = '0';
   document.getElementById('pv-sconto').value = '0';
   recalcTotali();
-  renderNotePresetChips();
+  renderNoteChecklist([]);
 }
 
 // ── Voci (line items) ────────────────────────────────
@@ -1323,7 +1323,7 @@ async function savePreventivo(andPrint) {
     totaleNetto:   imponibile,
     ivaPct:        ivaEsclusa ? 'esclusa' : ivaPct,
     totaleIvato:   totaleIvato,
-    note:          document.getElementById('pv-note').value.trim(),
+    noteVoci:      getSelectedNoteTexts(),
     status:        document.getElementById('pv-status').value,
   };
 
@@ -1467,7 +1467,14 @@ async function printPreventivo(id) {
     </div>
   </div>
 
-  ${p.note ? `<div class="pv-section"><div class="pv-section-title">Note</div><div class="pv-note">${escHtml(p.note)}</div></div>` : ''}
+  ${(() => {
+    const voci = p.noteVoci?.length ? p.noteVoci : (p.note ? [p.note] : []);
+    if (!voci.length) return '';
+    return `<div class="pv-section">
+      <div class="pv-section-title">Note e Condizioni</div>
+      ${voci.map((n, i) => `<div class="pv-note"${i > 0 ? ' style="margin-top:6px"' : ''}>${escHtml(n)}</div>`).join('')}
+    </div>`;
+  })()}
 
   <div class="pv-footer">
     Preventivo informativo — non costituisce documento fiscale.<br>
@@ -1486,90 +1493,96 @@ async function printPreventivo(id) {
 }
 
 // ═══════════════════════════════════════════════════════
-//  NOTE PREIMPOSTATE
+//  VOCI NOTE PREVENTIVO
 // ═══════════════════════════════════════════════════════
 
-const NOTE_PRESET_KEY = 'gh_note_preset';
+const NOTE_VOCI_KEY = 'gh_note_voci';
 
-function loadNotePresets() {
-  try { return JSON.parse(localStorage.getItem(NOTE_PRESET_KEY) || '[]'); }
+function loadNotaVoci() {
+  try { return JSON.parse(localStorage.getItem(NOTE_VOCI_KEY) || '[]'); }
   catch { return []; }
 }
-function saveNotePresets(list) {
-  localStorage.setItem(NOTE_PRESET_KEY, JSON.stringify(list));
+function saveNotaVoci(list) {
+  localStorage.setItem(NOTE_VOCI_KEY, JSON.stringify(list));
 }
 
-// Render chips nella form preventivo
-function renderNotePresetChips() {
-  const wrap = document.getElementById('pv-note-presets');
-  if (!wrap) return;
-  const presets = loadNotePresets();
-  if (!presets.length) { wrap.innerHTML = ''; return; }
-  wrap.innerHTML = `
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">
-      ${presets.map(p => `
-        <button type="button" class="note-preset-chip" onclick="insertNotePreset(${p.id})" title="Clicca per inserire nel testo">
-          ${escHtml(p.text.length > 40 ? p.text.slice(0,40) + '…' : p.text)}
-        </button>`).join('')}
-    </div>`;
-}
+// ── Checklist nella form preventivo ──────────────────
+function renderNoteChecklist(selectedTexts = []) {
+  const voci      = loadNotaVoci();
+  const checklist = document.getElementById('pv-note-checklist');
+  const empty     = document.getElementById('pv-note-empty');
+  if (!checklist) return;
 
-// Inserisce il testo nel textarea note
-function insertNotePreset(id) {
-  const presets = loadNotePresets();
-  const p = presets.find(x => x.id === id);
-  if (!p) return;
-  const ta = document.getElementById('pv-note');
-  if (!ta) return;
-  const cur = ta.value;
-  ta.value = cur ? cur + '\n\n' + p.text : p.text;
-  ta.focus();
-  showToast('Nota inserita', 'success');
-}
-
-// Apre il modal di gestione
-function openNotePreset() {
-  renderNotePresetList();
-  document.getElementById('new-note-preset-text').value = '';
-  document.getElementById('modal-note-preset').classList.add('active');
-}
-
-// Render lista nel modal
-function renderNotePresetList() {
-  const presets = loadNotePresets();
-  const list = document.getElementById('note-preset-list');
-  if (!list) return;
-  if (!presets.length) {
-    list.innerHTML = '<p style="font-size:13px;color:var(--g400);text-align:center;padding:20px 0">Nessuna nota preimpostata.<br>Aggiungine una qui sotto.</p>';
+  if (!voci.length) {
+    checklist.innerHTML = '';
+    if (empty) empty.style.display = '';
     return;
   }
-  list.innerHTML = presets.map(p => `
+  if (empty) empty.style.display = 'none';
+
+  checklist.innerHTML = voci.map(v => {
+    const checked = selectedTexts.includes(v.text);
+    return `
+      <label class="nota-voce-check">
+        <input type="checkbox" data-id="${v.id}" ${checked ? 'checked' : ''}>
+        <span>${escHtml(v.text)}</span>
+      </label>`;
+  }).join('');
+}
+
+// Restituisce i testi delle voci selezionate
+function getSelectedNoteTexts() {
+  const voci    = loadNotaVoci();
+  const checked = [...document.querySelectorAll('#pv-note-checklist input[type="checkbox"]:checked')];
+  return checked.map(cb => {
+    const v = voci.find(x => String(x.id) === cb.getAttribute('data-id'));
+    return v ? v.text : null;
+  }).filter(Boolean);
+}
+
+// ── Modal gestione voci ───────────────────────────────
+function openNoteVociManager() {
+  renderNoteVociList();
+  const inp = document.getElementById('new-nota-voce-text');
+  if (inp) inp.value = '';
+  document.getElementById('modal-note-voci').classList.add('active');
+}
+
+function renderNoteVociList() {
+  const voci = loadNotaVoci();
+  const list = document.getElementById('note-voci-list');
+  if (!list) return;
+  if (!voci.length) {
+    list.innerHTML = '<p style="font-size:13px;color:var(--g400);text-align:center;padding:24px 0">Nessuna voce. Aggiungine una qui sotto.</p>';
+    return;
+  }
+  list.innerHTML = voci.map(v => `
     <div class="note-preset-item">
-      <span class="note-preset-text">${escHtml(p.text)}</span>
-      <button class="btn btn-sm btn-danger-outline" type="button" onclick="deleteNotePreset(${p.id})" title="Elimina">✕</button>
+      <span class="note-preset-text">${escHtml(v.text)}</span>
+      <button class="btn btn-sm btn-danger-outline" type="button" onclick="deleteNotaVoce(${v.id})" title="Elimina">✕</button>
     </div>`).join('');
 }
 
-// Aggiunge una nota
-function addNotePreset() {
-  const text = document.getElementById('new-note-preset-text').value.trim();
-  if (!text) { showToast('Inserisci il testo della nota', 'error'); return; }
-  const presets = loadNotePresets();
-  const id = Date.now();
-  presets.push({ id, text });
-  saveNotePresets(presets);
-  document.getElementById('new-note-preset-text').value = '';
-  renderNotePresetList();
-  renderNotePresetChips();
-  showToast('Nota aggiunta', 'success');
+function addNotaVoce() {
+  const text = document.getElementById('new-nota-voce-text')?.value.trim();
+  if (!text) { showToast('Inserisci il testo della voce', 'error'); return; }
+  const voci = loadNotaVoci();
+  voci.push({ id: Date.now(), text });
+  saveNotaVoci(voci);
+  document.getElementById('new-nota-voce-text').value = '';
+  renderNoteVociList();
+  // Aggiorna la checklist mantenendo le selezioni correnti
+  const selectedTexts = getSelectedNoteTexts();
+  renderNoteChecklist(selectedTexts);
+  showToast('Voce aggiunta', 'success');
 }
 
-// Elimina una nota
-function deleteNotePreset(id) {
-  const presets = loadNotePresets().filter(p => p.id !== id);
-  saveNotePresets(presets);
-  renderNotePresetList();
-  renderNotePresetChips();
+function deleteNotaVoce(id) {
+  const voci = loadNotaVoci().filter(v => v.id !== id);
+  saveNotaVoci(voci);
+  renderNoteVociList();
+  const selectedTexts = getSelectedNoteTexts();
+  renderNoteChecklist(selectedTexts);
 }
 
 // ── IMPOSTAZIONI AZIENDA ────────────────────────────

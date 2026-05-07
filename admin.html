@@ -276,11 +276,12 @@
           <div class="card prev-card-section">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
               <h3 class="prev-section-title" style="margin:0">📝 Note</h3>
-              <button type="button" class="btn btn-sm btn-ghost" onclick="openNotePreset()" style="font-size:12px">⚙️ Gestisci preimpostate</button>
+              <button type="button" class="btn btn-sm btn-ghost" onclick="openNoteVociManager()" style="font-size:12px">⚙️ Gestisci voci</button>
             </div>
-            <!-- Note preimpostate -->
-            <div id="pv-note-presets" style="margin-bottom:10px"></div>
-            <textarea id="pv-note" class="form-control" rows="4" placeholder="Note per il cliente, condizioni, scadenza offerta..."></textarea>
+            <div id="pv-note-checklist" class="pv-note-checklist"></div>
+            <p id="pv-note-empty" style="font-size:13px;color:var(--g400);text-align:center;padding:18px 0;display:none">
+              Nessuna voce disponibile.<br>Clicca <strong>Gestisci voci</strong> per aggiungerne.
+            </p>
           </div>
           <div class="card prev-card-section prev-totali">
             <h3 class="prev-section-title">💰 Riepilogo</h3>
@@ -857,19 +858,19 @@
   </div>
 </div>
 
-<!-- MODAL: Note Preimpostate -->
-<div class="modal-overlay" id="modal-note-preset">
+<!-- MODAL: Gestisci Voci Note -->
+<div class="modal-overlay" id="modal-note-voci">
   <div class="modal">
     <div class="modal-header">
-      <h3 class="modal-title">📝 Note Preimpostate</h3>
-      <button class="modal-close" onclick="closeModal('modal-note-preset')">✕</button>
+      <h3 class="modal-title">📝 Voci Note Preventivo</h3>
+      <button class="modal-close" onclick="closeModal('modal-note-voci')">✕</button>
     </div>
-    <p style="font-size:13px;color:var(--g500);margin-bottom:16px">Crea testi che puoi inserire rapidamente nei preventivi con un click.</p>
-    <div id="note-preset-list" style="max-height:280px;overflow-y:auto;margin-bottom:16px"></div>
+    <p style="font-size:13px;color:var(--g500);margin-bottom:16px">Crea le voci nota da selezionare nei preventivi. Ogni voce appare come una condizione/clausola spuntabile.</p>
+    <div id="note-voci-list" style="max-height:300px;overflow-y:auto;margin-bottom:16px"></div>
     <div style="border-top:1px solid var(--border);padding-top:16px">
-      <label class="form-label">Aggiungi nuova nota</label>
-      <textarea id="new-note-preset-text" class="form-control" rows="3" placeholder="Testo della nota preimpostata..."></textarea>
-      <button type="button" class="btn btn-primary btn-sm" style="margin-top:10px" onclick="addNotePreset()">+ Aggiungi</button>
+      <label class="form-label">Nuova voce</label>
+      <textarea id="new-nota-voce-text" class="form-control" rows="3" placeholder="Es: I prezzi sono validi per 30 giorni dalla data del preventivo."></textarea>
+      <button type="button" class="btn btn-primary btn-sm" style="margin-top:10px" onclick="addNotaVoce()">+ Aggiungi voce</button>
     </div>
   </div>
 </div>
