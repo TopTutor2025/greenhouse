@@ -1416,11 +1416,17 @@ async function printPreventivo(id) {
     .pv-section-title{font-size:8.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#5a9e6f;margin-bottom:8px}
     .pv-client-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;font-size:10.5pt}
     .pv-client-grid label{font-size:8.5pt;color:#888;display:block;margin-bottom:1px}
-    table{width:100%;border-collapse:collapse;font-size:10pt}
+    table{width:100%;border-collapse:collapse;font-size:10pt;table-layout:fixed}
     thead tr{background:#5a9e6f;color:#fff}
     thead th{padding:8px 10px;text-align:left;font-weight:600;font-size:9pt}
+    thead th:nth-child(1){width:28px}
+    thead th:nth-child(3){width:44px}
+    thead th:nth-child(4){width:46px}
+    thead th:nth-child(5){width:88px}
+    thead th:nth-child(6){width:80px}
     tbody tr:nth-child(even){background:#f5faf6}
     tbody td{padding:7px 10px;border-bottom:1px solid #e8f0ea;vertical-align:top}
+    tbody td:nth-child(3),tbody td:nth-child(4),tbody td:nth-child(5),tbody td:nth-child(6){white-space:nowrap}
     .pv-totali{margin-left:auto;width:280px;margin-top:18px;border:1.5px solid #e8f0ea;border-radius:8px;overflow:hidden}
     .pv-totali-row{display:flex;justify-content:space-between;padding:8px 14px;font-size:10.5pt;border-bottom:1px solid #e8f0ea}
     .pv-totali-finale{background:#5a9e6f;color:#fff;font-weight:700;font-size:12pt;padding:11px 14px;display:flex;justify-content:space-between}
