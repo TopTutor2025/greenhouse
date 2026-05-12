@@ -1181,6 +1181,9 @@ async function editPreventivo(id) {
   document.getElementById('pv-indirizzo').value = p.cliente?.indirizzo || '';
   document.getElementById('pv-citta').value     = p.cliente?.citta     || '';
   document.getElementById('pv-provincia').value        = p.cliente?.provincia        || '';
+  document.getElementById('pv-piva').value             = p.cliente?.piva             || '';
+  document.getElementById('pv-cf').value               = p.cliente?.cf               || '';
+  document.getElementById('pv-sdi').value              = p.cliente?.sdi              || '';
   document.getElementById('pv-sede-indirizzo').value   = p.sedeLavoro?.indirizzo     || '';
   document.getElementById('pv-sede-citta').value       = p.sedeLavoro?.citta         || '';
   document.getElementById('pv-sede-provincia').value   = p.sedeLavoro?.provincia     || '';
@@ -1196,6 +1199,7 @@ async function editPreventivo(id) {
 
 function clearPrevForm() {
   ['pv-nome','pv-azienda','pv-email','pv-telefono','pv-indirizzo','pv-citta','pv-provincia',
+   'pv-piva','pv-cf','pv-sdi',
    'pv-sede-indirizzo','pv-sede-citta','pv-sede-provincia'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
@@ -1329,6 +1333,9 @@ async function savePreventivo(andPrint) {
       indirizzo: document.getElementById('pv-indirizzo').value.trim(),
       citta:     document.getElementById('pv-citta').value.trim(),
       provincia: document.getElementById('pv-provincia').value.trim(),
+      piva:      document.getElementById('pv-piva').value.trim(),
+      cf:        document.getElementById('pv-cf').value.trim(),
+      sdi:       document.getElementById('pv-sdi').value.trim(),
     },
     sedeLavoro: {
       indirizzo: document.getElementById('pv-sede-indirizzo').value.trim(),
@@ -1473,6 +1480,9 @@ async function printPreventivo(id) {
       ${p.cliente?.telefono ? `<div><label>Telefono</label>${escHtml(p.cliente.telefono)}</div>` : ''}
       ${p.cliente?.indirizzo? `<div><label>Indirizzo</label>${escHtml(p.cliente.indirizzo)}</div>` : ''}
       ${p.cliente?.citta    ? `<div><label>Città</label>${escHtml(p.cliente.citta)}${p.cliente.provincia?' ('+p.cliente.provincia+')':''}</div>` : ''}
+      ${p.cliente?.piva     ? `<div><label>Partita IVA</label>${escHtml(p.cliente.piva)}</div>` : ''}
+      ${p.cliente?.cf       ? `<div><label>Codice Fiscale</label>${escHtml(p.cliente.cf)}</div>` : ''}
+      ${p.cliente?.sdi      ? `<div><label>Codice SDI</label>${escHtml(p.cliente.sdi)}</div>` : ''}
     </div>
   </div>
 
