@@ -1403,9 +1403,9 @@ async function printPreventivo(id) {
       <td>${i+1}</td>
       <td>${escHtml(v.descrizione || '')}</td>
       <td style="text-align:center">${escHtml(v.unita || '')}</td>
-      <td style="text-align:right">${Number(v.quantita||1).toLocaleString('it-IT',{minimumFractionDigits:2})}</td>
-      <td style="text-align:right">€ ${prezzoInflated.toLocaleString('it-IT',{minimumFractionDigits:2})}</td>
-      <td style="text-align:right;font-weight:600">€ ${totaleInflated.toLocaleString('it-IT',{minimumFractionDigits:2})}</td>
+      <td style="text-align:right">${Number(v.quantita||1).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+      <td style="text-align:right">€ ${prezzoInflated.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+      <td style="text-align:right;font-weight:600">€ ${totaleInflated.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
     </tr>`;
   }).join('');
 
@@ -1419,7 +1419,7 @@ async function printPreventivo(id) {
   const ivaAmt       = imponibile * ivaPct / 100;
   const totalePDF    = imponibile + ivaAmt;
 
-  const fmt = n => '€ ' + Number(n||0).toLocaleString('it-IT',{minimumFractionDigits:2});
+  const fmt = n => '€ ' + Number(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
   const scontoRow = scontoPct > 0
     ? `<div class="pv-totali-row" style="color:#e53e3e"><span>Sconto ${scontoPct}%</span><span>-${fmt(scontoAmt)}</span></div>
        <div class="pv-totali-row"><span>Imponibile</span><span>${fmt(imponibile)}</span></div>`
@@ -1708,7 +1708,7 @@ function renderListinoBody(items) {
           <tr>
             <td>${escHtml(li.descrizione)}</td>
             <td>${escHtml(li.unita)}</td>
-            <td><strong>€ ${Number(li.prezzoUnitario).toLocaleString('it-IT',{minimumFractionDigits:2})}</strong></td>
+            <td><strong>€ ${Number(li.prezzoUnitario).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></td>
             <td>
               <button class="btn btn-sm btn-outline" onclick="openEditListinoItem('${li.id}')">✏️</button>
               <button class="btn btn-sm btn-danger-outline" onclick="confirmDeleteListinoItem('${li.id}')">🗑️</button>
