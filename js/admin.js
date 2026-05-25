@@ -1245,7 +1245,9 @@ function refreshVociTable() {
   recalcTotali();
 }
 
-function addVoce() {
+async function addVoce() {
+  // Assicura che il listino sia caricato prima di aggiungere la voce
+  if (!_listinoCache.length) _listinoCache = await DB.getListino();
   _preventivoVoci.push({ descrizione: '', categoria: '', unita: 'cad', quantita: 1, prezzoUnitario: 0 });
   refreshVociTable();
   // focus last description input
@@ -1264,9 +1266,22 @@ function setVoce(i, field, value) {
 
 function onVoceDescrChange(i, value) {
   _preventivoVoci[i].descrizione = value;
-  // try autocomplete from listino (trim per evitare mismatch da spazi)
-  const v = value.trim();
-  const match = _listinoCache.find(li => li.descrizione.trim() === v);
+
+  // 1) Cerca prima tramite data-id dell'<option> selezionata nella datalist
+  //    (bypassa qualsiasi problema di encoding/whitespace nel testo)
+  const dl = document.getElementById('dl-listino');
+  const selectedOpt = dl ? [...dl.options].find(o => o.value === value) : null;
+  let match = null;
+  if (selectedOpt) {
+    const dataId = selectedOpt.getAttribute('data-id');
+    match = _listinoCache.find(li => String(li.id) === String(dataId));
+  }
+  // 2) Fallback: confronto testo per digitazione manuale o edge case
+  if (!match) {
+    const v = value.trim();
+    match = _listinoCache.find(li => li.descrizione.trim() === v);
+  }
+
   if (match) {
     _preventivoVoci[i].categoria      = match.categoria;
     _preventivoVoci[i].unita          = match.unita;
