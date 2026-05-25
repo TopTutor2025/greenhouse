@@ -1159,10 +1159,12 @@ function backToPreventivi() {
   _preventivoVoci = [];
 }
 
-function openNewPreventivo() {
+async function openNewPreventivo() {
   _editingPreventivoId = null;
   _preventivoVoci = [];
   document.getElementById('prev-form-title').textContent = 'Nuovo Preventivo';
+  if (!_noteVociCache.length) await initNoteVoci();
+  if (!_listinoCache.length) _listinoCache = await DB.getListino();
   clearPrevForm();
   refreshVociTable();
   showPrevFormView();
@@ -1191,6 +1193,7 @@ async function editPreventivo(id) {
   document.getElementById('pv-iva').value        = String(p.ivaPct === 'esclusa' ? 'esclusa' : (p.ivaPct ?? 22));
   document.getElementById('pv-magg').value       = String(p.maggiorazione ?? 0);
   document.getElementById('pv-sconto').value     = String(p.sconto       ?? 0);
+  if (!_noteVociCache.length) await initNoteVoci();
   refreshVociTable();
   recalcTotali();
   renderNoteChecklist(p.noteVoci || (p.note ? [p.note] : []));
