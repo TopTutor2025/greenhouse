@@ -1232,6 +1232,7 @@ function refreshVociTable() {
         <input class="form-control prev-voce-input" list="dl-listino"
           value="${escHtml(v.descrizione || '')}"
           oninput="onVoceDescrChange(${i}, this.value)"
+          onchange="onVoceDescrChange(${i}, this.value)"
           placeholder="Descrizione lavorazione...">
       </td>
       <td><span class="prev-cat-pill">${escHtml(v.categoria || '—')}</span></td>
@@ -1263,11 +1264,12 @@ function setVoce(i, field, value) {
 
 function onVoceDescrChange(i, value) {
   _preventivoVoci[i].descrizione = value;
-  // try autocomplete from listino
-  const match = _listinoCache.find(li => li.descrizione === value);
+  // try autocomplete from listino (trim per evitare mismatch da spazi)
+  const v = value.trim();
+  const match = _listinoCache.find(li => li.descrizione.trim() === v);
   if (match) {
-    _preventivoVoci[i].categoria     = match.categoria;
-    _preventivoVoci[i].unita         = match.unita;
+    _preventivoVoci[i].categoria      = match.categoria;
+    _preventivoVoci[i].unita          = match.unita;
     _preventivoVoci[i].prezzoUnitario = match.prezzoUnitario;
     refreshVociTable();
   }
