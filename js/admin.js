@@ -3032,9 +3032,6 @@ function contPreset(tipo) {
       { nome: 'IRES',  da: 0, a: null, pct: 24  },
       { nome: 'IRAP',  da: 0, a: null, pct: 3.9 },
     ],
-    forfettario: [
-      { nome: 'Imposta sostitutiva', da: 0, a: null, pct: 15 },
-    ],
     irpef: [
       { nome: '1° scaglione (fino a €28.000)',  da: 0,     a: 28000, pct: 23 },
       { nome: '2° scaglione (fino a €50.000)',  da: 28000, a: 50000, pct: 25 },
