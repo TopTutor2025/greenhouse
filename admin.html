@@ -60,6 +60,9 @@
       <button class="admin-nav-item" data-sec="documentazione" onclick="showSection('documentazione')">
         <span class="nav-icon">📁</span> Documentazione
       </button>
+      <button class="admin-nav-item" data-sec="contabilita" onclick="showSection('contabilita')">
+        <span class="nav-icon">💰</span> Contabilità
+      </button>
       <button class="admin-nav-item" data-sec="calendario" onclick="showSection('calendario')">
         <span class="nav-icon">📅</span> Calendario
       </button>
@@ -406,6 +409,69 @@
         <h3>Nessun documento</h3>
         <p>Carica il primo documento con il pulsante "Nuovo Documento".</p>
       </div>
+    </div>
+
+    <!-- ═══ CONTABILITÀ SECTION ═══ -->
+    <div class="admin-section" id="sec-contabilita">
+
+      <!-- Header: titolo + anno nav + pulsanti -->
+      <div class="cont-header">
+        <h2>💰 Contabilità</h2>
+        <div class="cont-header-actions">
+          <div class="cont-year-nav">
+            <button onclick="contCambiaAnno(-1)" title="Anno precedente">‹</button>
+            <span id="cont-anno-label">2025</span>
+            <button onclick="contCambiaAnno(+1)" title="Anno successivo">›</button>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="openContSettings()">⚙️ Impostazioni Fiscali</button>
+          <button class="btn btn-ghost btn-sm" onclick="esportaContabilitaCSV()">📥 Esporta CSV</button>
+        </div>
+      </div>
+
+      <!-- KPI annuali -->
+      <div class="cont-kpi-grid" id="cont-kpi"></div>
+
+      <!-- Breakdown tasse -->
+      <div id="cont-tax-breakdown"></div>
+
+      <!-- Tabs -->
+      <div class="cont-tabs">
+        <button class="cont-tab active" data-tab="mensile" onclick="switchContTab('mensile')">📅 Riepilogo Mensile</button>
+        <button class="cont-tab" data-tab="spese"  onclick="switchContTab('spese')">🧾 Spese</button>
+      </div>
+
+      <!-- Tab: Mensile -->
+      <div id="cont-tab-mensile">
+        <div id="cont-monthly-list"></div>
+      </div>
+
+      <!-- Tab: Spese -->
+      <div id="cont-tab-spese" style="display:none">
+        <div class="cont-spese-topbar">
+          <div class="cont-spese-filters">
+            <select class="form-control" id="cont-filter-mese" onchange="renderContSpese()">
+              <option value="">Tutti i mesi</option>
+              <option value="0">Gennaio</option><option value="1">Febbraio</option>
+              <option value="2">Marzo</option><option value="3">Aprile</option>
+              <option value="4">Maggio</option><option value="5">Giugno</option>
+              <option value="6">Luglio</option><option value="7">Agosto</option>
+              <option value="8">Settembre</option><option value="9">Ottobre</option>
+              <option value="10">Novembre</option><option value="11">Dicembre</option>
+            </select>
+            <select class="form-control" id="cont-filter-cat" onchange="renderContSpese()">
+              <option value="">Tutte le categorie</option>
+              <option>Attrezzatura</option><option>Carburante</option>
+              <option>Materiali</option><option>Vitto e Alloggio</option>
+              <option>Personale</option><option>Servizi Professionali</option>
+              <option>Utenze</option><option>Affitti</option>
+              <option>Pubblicità</option><option>Software</option><option>Altro</option>
+            </select>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openAddSpesa()">+ Aggiungi Spesa</button>
+        </div>
+        <div id="cont-spese-list"></div>
+      </div>
+
     </div>
 
     <!-- ── CALENDARIO SECTION ── -->
@@ -1106,5 +1172,141 @@
 <script src="js/config.js"></script>
 <script src="js/app.js"></script>
 <script src="js/admin.js"></script>
+
+<!-- ═══════════════════════════════════════════════════════
+     MODAL: Aggiungi / Modifica Spesa
+═══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-spesa">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-header">
+      <h3 class="modal-title" id="spesa-modal-title">➕ Nuova Spesa</h3>
+      <button class="modal-close" onclick="closeModal('modal-spesa')">✕</button>
+    </div>
+    <div style="max-height:70vh;overflow-y:auto;padding-right:2px">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Data *</label>
+          <input type="date" class="form-control" id="sp-data">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Categoria *</label>
+          <select class="form-control" id="sp-categoria">
+            <option value="">Seleziona...</option>
+            <option>Attrezzatura</option><option>Carburante</option>
+            <option>Materiali</option><option>Vitto e Alloggio</option>
+            <option>Personale</option><option>Servizi Professionali</option>
+            <option>Utenze</option><option>Affitti</option>
+            <option>Pubblicità</option><option>Software</option><option>Altro</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Descrizione *</label>
+        <input type="text" class="form-control" id="sp-descrizione" placeholder="Es: Acquisto guanti da lavoro, carburante furgone...">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Importo totale (€) *</label>
+          <input type="number" class="form-control" id="sp-importo" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">% Deducibilità</label>
+          <input type="number" class="form-control" id="sp-deducibilita" min="0" max="100" step="1" value="100" placeholder="100">
+          <p class="form-hint">Quota che riduce il reddito imponibile</p>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">IVA pagata sull'acquisto (€)</label>
+          <input type="number" class="form-control" id="sp-iva-importo" min="0" step="0.01" value="0" placeholder="0.00">
+          <p class="form-hint">IVA indicata nella ricevuta/fattura</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">% Detraibilità IVA</label>
+          <input type="number" class="form-control" id="sp-detraibilita-iva" min="0" max="100" step="1" value="100" placeholder="100">
+          <p class="form-hint">Quota IVA che puoi recuperare</p>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Note</label>
+        <textarea class="form-control" id="sp-note" rows="2" placeholder="Annotazioni opzionali..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Allegato (immagine o PDF)</label>
+        <div class="cont-upload-area" id="sp-upload-area" onclick="document.getElementById('sp-file-input').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="spHandleDrop(event)">
+          <input type="file" id="sp-file-input" accept="image/*,.pdf" onchange="spHandleFile(this.files[0])">
+          <span id="sp-upload-prompt">📎 Clicca per allegare o trascina un file<br><small style="color:var(--g400)">JPG, PNG, PDF · max 10 MB</small></span>
+        </div>
+        <div id="sp-file-preview" style="display:none" class="cont-file-preview">
+          <span id="sp-file-name"></span>
+          <button type="button" class="rm-file" onclick="spRimuoviFile()" title="Rimuovi">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-spesa')">Annulla</button>
+      <button class="btn btn-primary" onclick="saveSpesa()">💾 Salva Spesa</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     MODAL: Impostazioni Fiscali
+═══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-cont-settings">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-header">
+      <h3 class="modal-title">⚙️ Impostazioni Fiscali</h3>
+      <button class="modal-close" onclick="closeModal('modal-cont-settings')">✕</button>
+    </div>
+
+    <p style="font-size:13px;color:var(--g500);margin-bottom:18px;line-height:1.6">
+      Inserisci le <strong>aliquote IRPEF / forfettarie</strong> per il calcolo delle tasse stimate.<br>
+      Per un regime forfettario usa un solo scaglione (es. 0 → illimitato, 15%). Per IRPEF inserisci
+      più scaglioni progressivi.
+    </p>
+
+    <div style="margin-bottom:10px">
+      <div style="display:grid;grid-template-columns:1fr 90px 90px 80px 38px;gap:8px;margin-bottom:6px;padding:0 4px">
+        <span style="font-size:11.5px;font-weight:700;color:var(--g400);text-transform:uppercase">Nome scaglione</span>
+        <span style="font-size:11.5px;font-weight:700;color:var(--g400);text-transform:uppercase;text-align:right">Da (€)</span>
+        <span style="font-size:11.5px;font-weight:700;color:var(--g400);text-transform:uppercase;text-align:right">A (€)</span>
+        <span style="font-size:11.5px;font-weight:700;color:var(--g400);text-transform:uppercase;text-align:right">%</span>
+        <span></span>
+      </div>
+      <div id="aliquote-rows"></div>
+    </div>
+
+    <button class="btn btn-outline btn-sm" onclick="addAliquotaRow()">+ Aggiungi scaglione</button>
+
+    <div class="modal-footer" style="margin-top:20px">
+      <button class="btn btn-ghost" onclick="closeModal('modal-cont-settings')">Annulla</button>
+      <button class="btn btn-primary" onclick="saveContSettings()">💾 Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Visualizza Allegato Spesa -->
+<div class="modal-overlay" id="modal-spesa-allegato">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-header">
+      <h3 class="modal-title" id="allegato-modal-title">📎 Allegato</h3>
+      <button class="modal-close" onclick="closeModal('modal-spesa-allegato')">✕</button>
+    </div>
+    <div id="allegato-modal-body" style="text-align:center;min-height:200px"></div>
+    <div class="modal-footer">
+      <a id="allegato-download-link" class="btn btn-outline" download target="_blank">⬇️ Scarica</a>
+      <button class="btn btn-ghost" onclick="closeModal('modal-spesa-allegato')">Chiudi</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

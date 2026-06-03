@@ -492,6 +492,76 @@ const DB = {
     if (error) throw error;
   },
 
+  // ── Contabilità — Spese ──────────────────────────────────
+  async getSpese(anno) {
+    if (USE_LOCAL) {
+      try {
+        const all = JSON.parse(localStorage.getItem('gh_spese') || '[]');
+        return anno ? all.filter(s => s.data && s.data.startsWith(String(anno))) : all;
+      } catch { return []; }
+    }
+    const { data } = await sb.from('spese').select('*')
+      .gte('data', `${anno}-01-01`)
+      .lte('data', `${anno}-12-31`)
+      .order('data', { ascending: false });
+    return data || [];
+  },
+  async createSpesa(f) {
+    if (USE_LOCAL) {
+      const list = JSON.parse(localStorage.getItem('gh_spese') || '[]');
+      const item = { id: Date.now(), ...f };
+      list.push(item);
+      localStorage.setItem('gh_spese', JSON.stringify(list));
+      return item;
+    }
+    const { data, error } = await sb.from('spese').insert(f).select().single();
+    if (error) throw error;
+    return data;
+  },
+  async updateSpesa(id, f) {
+    if (USE_LOCAL) {
+      const list = JSON.parse(localStorage.getItem('gh_spese') || '[]');
+      const idx  = list.findIndex(s => String(s.id) === String(id));
+      if (idx >= 0) { list[idx] = { ...list[idx], ...f }; localStorage.setItem('gh_spese', JSON.stringify(list)); return list[idx]; }
+      return null;
+    }
+    const { data, error } = await sb.from('spese').update(f).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  },
+  async deleteSpesa(id) {
+    if (USE_LOCAL) {
+      const list = JSON.parse(localStorage.getItem('gh_spese') || '[]');
+      localStorage.setItem('gh_spese', JSON.stringify(list.filter(s => String(s.id) !== String(id))));
+      return;
+    }
+    const { data } = await sb.from('spese').select('allegato_path').eq('id', id).single();
+    if (data?.allegato_path) await sb.storage.from('spese-allegati').remove([data.allegato_path]);
+    const { error } = await sb.from('spese').delete().eq('id', id);
+    if (error) throw error;
+  },
+  async getGuadagniAnno(anno) {
+    if (USE_LOCAL) {
+      try {
+        const all = JSON.parse(localStorage.getItem('gh_preventivi') || '[]');
+        return all.filter(p => p.status === 'accettato' &&
+          (p.createdAt || p.created_at || '').startsWith(String(anno)));
+      } catch { return []; }
+    }
+    const start = `${anno}-01-01T00:00:00`;
+    const end   = `${anno}-12-31T23:59:59`;
+    const { data } = await sb.from('preventivi').select('*')
+      .eq('status', 'accettato')
+      .gte('created_at', start)
+      .lte('created_at', end);
+    return (data || []).map(mapPreventivoFromDb);
+  },
+  async getSignedUrl(bucket, path) {
+    if (!path || USE_LOCAL) return null;
+    const { data } = await sb.storage.from(bucket).createSignedUrl(path, 3600);
+    return data?.signedUrl || null;
+  },
+
   // ── File Storage ──
   async uploadFile(bucket, file) {
     if (USE_LOCAL) return null;
