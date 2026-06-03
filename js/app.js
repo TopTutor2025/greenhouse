@@ -556,6 +556,53 @@ const DB = {
       .lte('created_at', end);
     return (data || []).map(mapPreventivoFromDb);
   },
+  // ── Contabilità — Entrate Extra ─────────────────────────
+  async getEntrateExtra(anno) {
+    if (USE_LOCAL) {
+      try {
+        const all = JSON.parse(localStorage.getItem('gh_entrate_extra') || '[]');
+        return anno ? all.filter(e => e.data && e.data.startsWith(String(anno))) : all;
+      } catch { return []; }
+    }
+    const { data } = await sb.from('entrate_extra').select('*')
+      .gte('data', `${anno}-01-01`)
+      .lte('data', `${anno}-12-31`)
+      .order('data', { ascending: false });
+    return data || [];
+  },
+  async createEntrataExtra(f) {
+    if (USE_LOCAL) {
+      const list = JSON.parse(localStorage.getItem('gh_entrate_extra') || '[]');
+      const item = { id: Date.now(), ...f };
+      list.push(item);
+      localStorage.setItem('gh_entrate_extra', JSON.stringify(list));
+      return item;
+    }
+    const { data, error } = await sb.from('entrate_extra').insert(f).select().single();
+    if (error) throw error;
+    return data;
+  },
+  async updateEntrataExtra(id, f) {
+    if (USE_LOCAL) {
+      const list = JSON.parse(localStorage.getItem('gh_entrate_extra') || '[]');
+      const idx  = list.findIndex(e => String(e.id) === String(id));
+      if (idx >= 0) { list[idx] = { ...list[idx], ...f }; localStorage.setItem('gh_entrate_extra', JSON.stringify(list)); return list[idx]; }
+      return null;
+    }
+    const { data, error } = await sb.from('entrate_extra').update(f).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  },
+  async deleteEntrataExtra(id) {
+    if (USE_LOCAL) {
+      const list = JSON.parse(localStorage.getItem('gh_entrate_extra') || '[]');
+      localStorage.setItem('gh_entrate_extra', JSON.stringify(list.filter(e => String(e.id) !== String(id))));
+      return;
+    }
+    const { error } = await sb.from('entrate_extra').delete().eq('id', id);
+    if (error) throw error;
+  },
+
   async getSignedUrl(bucket, path) {
     if (!path || USE_LOCAL) return null;
     const { data } = await sb.storage.from(bucket).createSignedUrl(path, 3600);

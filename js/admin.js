@@ -2470,14 +2470,16 @@ async function deleteCalUser(userId) {
 //  CONTABILITÀ
 // ═══════════════════════════════════════════════════════════
 
-let _contAnno        = new Date().getFullYear();
-let _allSpese        = [];
-let _allGuadagni     = [];
-let _contAliquote    = [];     // array { nome, da, a (null=illimitato), pct }
-let _editingSpesaId  = null;
-let _spNewFile       = null;   // File object da caricare
-let _spExistingPath  = null;   // path allegato già salvato
-let _contActiveTab   = 'mensile';
+let _contAnno          = new Date().getFullYear();
+let _allSpese          = [];
+let _allGuadagni       = [];
+let _allEntrateExtra   = [];
+let _contAliquote      = [];     // array { nome, da, a (null=illimitato), pct }
+let _editingSpesaId    = null;
+let _editingExtraId    = null;
+let _spNewFile         = null;   // File object da caricare
+let _spExistingPath    = null;   // path allegato già salvato
+let _contActiveTab     = 'mensile';
 
 const MESI_IT = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
                  'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
@@ -2487,9 +2489,10 @@ async function renderContabilita() {
   document.getElementById('cont-anno-label').textContent = _contAnno;
   const settings = await DB.getSettings();
   _contAliquote  = settings.aliquoteFiscali || [];
-  [_allSpese, _allGuadagni] = await Promise.all([
+  [_allSpese, _allGuadagni, _allEntrateExtra] = await Promise.all([
     DB.getSpese(_contAnno),
-    DB.getGuadagniAnno(_contAnno)
+    DB.getGuadagniAnno(_contAnno),
+    DB.getEntrateExtra(_contAnno)
   ]);
   const months  = _buildContMonths();
   const annual  = _buildAnnualTotals(months);
@@ -2497,6 +2500,7 @@ async function renderContabilita() {
   _renderContTax(annual);
   _renderContMensile(months, annual);
   renderContSpese();
+  renderContExtra();
   switchContTab(_contActiveTab);
 }
 
@@ -2511,6 +2515,7 @@ function switchContTab(tab) {
     t.classList.toggle('active', t.dataset.tab === tab));
   document.getElementById('cont-tab-mensile').style.display = tab === 'mensile' ? '' : 'none';
   document.getElementById('cont-tab-spese').style.display   = tab === 'spese'   ? '' : 'none';
+  document.getElementById('cont-tab-extra').style.display   = tab === 'extra'   ? '' : 'none';
 }
 
 // ── Calcolo mesi ────────────────────────────────────────
@@ -2518,6 +2523,7 @@ function _buildContMonths() {
   const months = MESI_IT.map((nome, i) => ({
     idx: i, nome,
     entrate: 0, ivaRiscossa: 0, preventivi: [],
+    entrateExtra: 0, extraList: [],
     spese: 0, speseDeducibili: 0, ivaRecuperabile: 0, speseList: []
   }));
 
@@ -2531,6 +2537,14 @@ function _buildContMonths() {
     months[m].entrate    += imponibile;
     months[m].ivaRiscossa+= ivaRisc;
     months[m].preventivi.push(p);
+  }
+
+  for (const e of _allEntrateExtra) {
+    const dt = new Date(e.data + 'T12:00:00');
+    if (isNaN(dt)) continue;
+    const m = dt.getMonth();
+    months[m].entrateExtra += +(e.importo || 0);
+    months[m].extraList.push(e);
   }
 
   for (const s of _allSpese) {
@@ -2548,17 +2562,21 @@ function _buildContMonths() {
 function _buildAnnualTotals(months) {
   const t = months.reduce((a, m) => ({
     entrate:          a.entrate          + m.entrate,
+    entrateExtra:     a.entrateExtra     + m.entrateExtra,
     ivaRiscossa:      a.ivaRiscossa      + m.ivaRiscossa,
     spese:            a.spese            + m.spese,
     speseDeducibili:  a.speseDeducibili  + m.speseDeducibili,
     ivaRecuperabile:  a.ivaRecuperabile  + m.ivaRecuperabile,
-  }), { entrate:0, ivaRiscossa:0, spese:0, speseDeducibili:0, ivaRecuperabile:0 });
+  }), { entrate:0, entrateExtra:0, ivaRiscossa:0, spese:0, speseDeducibili:0, ivaRecuperabile:0 });
 
-  const base         = Math.max(0, t.entrate - t.speseDeducibili);
-  const tasse        = _calcolaTasse(base, _contAliquote);
-  const ivaDaVersare = Math.max(0, t.ivaRiscossa - t.ivaRecuperabile);
-  const utileNetto   = t.entrate - t.spese - tasse;
-  return { ...t, base, tasse, ivaDaVersare, utileNetto };
+  // Base imponibile: solo preventivi, NON le entrate extra (non tassabili)
+  const base          = Math.max(0, t.entrate - t.speseDeducibili);
+  const tasse         = _calcolaTasse(base, _contAliquote);
+  const ivaDaVersare  = Math.max(0, t.ivaRiscossa - t.ivaRecuperabile);
+  // Utile netto: include entrate extra (sono soldi veri) ma non IVA riscossa
+  const fatturato     = t.entrate + t.entrateExtra;
+  const utileNetto    = fatturato - t.spese - tasse;
+  return { ...t, fatturato, base, tasse, ivaDaVersare, utileNetto };
 }
 
 function _calcolaTasse(base, aliquote) {
@@ -2581,9 +2599,9 @@ function _renderContKPI(a) {
   const noTax = !_contAliquote.length;
   document.getElementById('cont-kpi').innerHTML = `
     <div class="cont-kpi-card green">
-      <div class="cont-kpi-label">💰 Fatturato Lordo</div>
-      <div class="cont-kpi-value">${fmt(a.entrate)}</div>
-      <div class="cont-kpi-sub">Imponibile preventivi accettati</div>
+      <div class="cont-kpi-label">💰 Monte Guadagni</div>
+      <div class="cont-kpi-value">${fmt(a.fatturato)}</div>
+      <div class="cont-kpi-sub">Preventivi: ${fmt(a.entrate)}${a.entrateExtra > 0 ? ` · Extra: ${fmt(a.entrateExtra)}` : ''}</div>
     </div>
     <div class="cont-kpi-card blue">
       <div class="cont-kpi-label">📊 IVA Riscossa</div>
@@ -2648,8 +2666,11 @@ function _renderContTax(a) {
       <div class="cont-tax-title">🏦 Calcolo Tasse Annuali</div>
       <div class="cont-tax-rows">
         <div class="cont-tax-row">
-          <span>Fatturato imponibile</span><span>${fmt(a.entrate)}</span>
+          <span>Fatturato imponibile (preventivi)</span><span>${fmt(a.entrate)}</span>
         </div>
+        ${a.entrateExtra > 0 ? `<div class="cont-tax-row" style="color:var(--g500);font-size:12.5px">
+          <span>Entrate extra (non tassabili)</span><span>${fmt(a.entrateExtra)}</span>
+        </div>` : ''}
         <div class="cont-tax-row">
           <span>Spese deducibili</span><span style="color:var(--danger)">− ${fmt(a.speseDeducibili)}</span>
         </div>
@@ -2676,8 +2697,8 @@ function _renderContMensile(months, annual) {
   const curMonth = now.getFullYear() === _contAnno ? now.getMonth() : -1;
 
   const rows = months.map(m => {
-    const hasActivity = m.entrate > 0 || m.spese > 0;
-    const saldo = m.entrate - m.spese;
+    const hasActivity = m.entrate > 0 || m.spese > 0 || m.entrateExtra > 0;
+    const saldo = m.entrate + m.entrateExtra - m.spese;
     const isOpen = m.idx === curMonth && hasActivity;
 
     // Detail lines
@@ -2710,8 +2731,12 @@ function _renderContMensile(months, annual) {
       <div class="cont-month-body">
         <div class="cont-month-detail-grid">
           <div class="cont-month-detail-item">
-            <span class="d-lbl">Imponibile</span>
+            <span class="d-lbl">Imponibile preventivi</span>
             <span class="d-val">${fmt(m.entrate)}</span>
+          </div>
+          <div class="cont-month-detail-item">
+            <span class="d-lbl">💶 Entrate extra</span>
+            <span class="d-val" style="color:var(--info)">${fmt(m.entrateExtra)}</span>
           </div>
           <div class="cont-month-detail-item">
             <span class="d-lbl">IVA riscossa</span>
@@ -2736,7 +2761,10 @@ function _renderContMensile(months, annual) {
         </div>
         <div style="font-size:11.5px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">Preventivi accettati</div>
         <div class="cont-month-prev-list">${prevLinks}</div>
-        ${nSpese > 0 ? `<span class="cont-month-view-spese" onclick="contVaiASpeseMese(${m.idx})">Vedi ${nSpese} spese di ${m.nome} →</span>` : ''}
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px">
+          ${nSpese > 0 ? `<span class="cont-month-view-spese" onclick="contVaiASpeseMese(${m.idx})">Vedi ${nSpese} spese di ${m.nome} →</span>` : ''}
+          ${m.extraList.length > 0 ? `<span class="cont-month-view-spese" style="color:var(--info)" onclick="contVaiAExtraMese(${m.idx})">Vedi ${m.extraList.length} entrate extra →</span>` : ''}
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -2931,6 +2959,111 @@ function confirmDeleteSpesa(id, desc) {
       showToast('Spesa eliminata', 'success');
       await renderContabilita();
       switchContTab('spese');
+    } catch(e) { showToast('Errore eliminazione', 'error'); }
+  });
+}
+
+// ── Entrate Extra ─────────────────────────────────────────
+function renderContExtra() {
+  const meseVal = document.getElementById('cont-filter-mese-extra')?.value;
+  const fmt = v => v.toLocaleString('it-IT', { style:'currency', currency:'EUR', maximumFractionDigits:2 });
+
+  let list = [..._allEntrateExtra];
+  if (meseVal !== '' && meseVal !== undefined) {
+    list = list.filter(e => {
+      const m = new Date(e.data + 'T12:00:00').getMonth();
+      return String(m) === String(meseVal);
+    });
+  }
+  list.sort((a, b) => b.data?.localeCompare(a.data || '') || 0);
+
+  const totale = list.reduce((s, e) => s + +(e.importo || 0), 0);
+
+  if (!list.length) {
+    document.getElementById('cont-extra-list').innerHTML =
+      `<div style="text-align:center;padding:48px 0;color:var(--g400)">
+        <div style="font-size:40px;margin-bottom:10px">💶</div>
+        <p style="font-size:14px">Nessuna entrata extra${meseVal !== '' ? ' per questo mese' : ''}.</p>
+        <p style="font-size:13px;margin-top:6px">Clicca <strong>+ Aggiungi Entrata Extra</strong> per inserirne una.</p>
+      </div>`;
+    return;
+  }
+
+  const rows = list.map(e => {
+    const dataFmt = e.data ? new Date(e.data + 'T12:00:00').toLocaleDateString('it-IT') : '—';
+    return `
+    <div class="cont-spesa-row" style="grid-template-columns:90px 1fr 120px auto">
+      <span style="color:var(--g500);font-size:13px">${dataFmt}</span>
+      <span style="font-weight:600;font-size:13.5px">${escHtml(e.descrizione || '—')}</span>
+      <div style="text-align:right;font-weight:700;font-size:14px;color:var(--info)">${fmt(+(e.importo||0))}</div>
+      <div style="display:flex;gap:5px">
+        <button class="btn btn-sm btn-outline" onclick="openEditExtra('${e.id}')">✏️</button>
+        <button class="btn btn-sm btn-danger-outline" onclick="confirmDeleteExtra('${e.id}','${escHtml(e.descrizione||'')}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('cont-extra-list').innerHTML =
+    `<div style="text-align:right;font-size:13px;color:var(--g500);margin-bottom:10px">
+      Totale mostrato: <strong style="color:var(--info)">${fmt(totale)}</strong>
+    </div>` + rows;
+}
+
+function contVaiAExtraMese(mese) {
+  switchContTab('extra');
+  const sel = document.getElementById('cont-filter-mese-extra');
+  if (sel) sel.value = String(mese);
+  renderContExtra();
+}
+
+function openAddExtra() {
+  _editingExtraId = null;
+  document.getElementById('extra-modal-title').textContent = '💶 Nuova Entrata Extra';
+  document.getElementById('ex-data').value        = new Date().toISOString().slice(0,10);
+  document.getElementById('ex-importo').value     = '';
+  document.getElementById('ex-descrizione').value = '';
+  document.getElementById('modal-extra').classList.add('active');
+}
+
+function openEditExtra(id) {
+  const e = _allEntrateExtra.find(x => String(x.id) === String(id));
+  if (!e) return;
+  _editingExtraId = id;
+  document.getElementById('extra-modal-title').textContent = '✏️ Modifica Entrata Extra';
+  document.getElementById('ex-data').value        = e.data        || '';
+  document.getElementById('ex-importo').value     = e.importo     || '';
+  document.getElementById('ex-descrizione').value = e.descrizione || '';
+  document.getElementById('modal-extra').classList.add('active');
+}
+
+async function saveExtra() {
+  const data      = document.getElementById('ex-data').value;
+  const importo   = parseFloat(document.getElementById('ex-importo').value) || 0;
+  const descrizione = document.getElementById('ex-descrizione').value.trim();
+  if (!data || importo <= 0) { showToast('Inserisci data e importo', 'error'); return; }
+
+  const payload = { data, importo, descrizione: descrizione || null };
+  try {
+    if (_editingExtraId) {
+      await DB.updateEntrataExtra(_editingExtraId, payload);
+      showToast('Entrata aggiornata', 'success');
+    } else {
+      await DB.createEntrataExtra(payload);
+      showToast('Entrata salvata', 'success');
+    }
+    closeModal('modal-extra');
+    await renderContabilita();
+    switchContTab('extra');
+  } catch(e) { console.error(e); showToast('Errore nel salvataggio', 'error'); }
+}
+
+function confirmDeleteExtra(id, desc) {
+  showConfirm('Elimina entrata', `Eliminare "${desc || 'questa entrata'}"?`, async () => {
+    try {
+      await DB.deleteEntrataExtra(id);
+      showToast('Entrata eliminata', 'success');
+      await renderContabilita();
+      switchContTab('extra');
     } catch(e) { showToast('Errore eliminazione', 'error'); }
   });
 }

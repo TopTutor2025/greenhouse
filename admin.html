@@ -437,7 +437,8 @@
       <!-- Tabs -->
       <div class="cont-tabs">
         <button class="cont-tab active" data-tab="mensile" onclick="switchContTab('mensile')">📅 Riepilogo Mensile</button>
-        <button class="cont-tab" data-tab="spese"  onclick="switchContTab('spese')">🧾 Spese</button>
+        <button class="cont-tab" data-tab="spese"   onclick="switchContTab('spese')">🧾 Spese</button>
+        <button class="cont-tab" data-tab="extra"   onclick="switchContTab('extra')">💶 Entrate Extra</button>
       </div>
 
       <!-- Tab: Mensile -->
@@ -470,6 +471,28 @@
           <button class="btn btn-primary btn-sm" onclick="openAddSpesa()">+ Aggiungi Spesa</button>
         </div>
         <div id="cont-spese-list"></div>
+      </div>
+
+      <!-- Tab: Entrate Extra -->
+      <div id="cont-tab-extra" style="display:none">
+        <div class="cont-spese-topbar">
+          <div class="cont-spese-filters">
+            <select class="form-control" id="cont-filter-mese-extra" onchange="renderContExtra()">
+              <option value="">Tutti i mesi</option>
+              <option value="0">Gennaio</option><option value="1">Febbraio</option>
+              <option value="2">Marzo</option><option value="3">Aprile</option>
+              <option value="4">Maggio</option><option value="5">Giugno</option>
+              <option value="6">Luglio</option><option value="7">Agosto</option>
+              <option value="8">Settembre</option><option value="9">Ottobre</option>
+              <option value="10">Novembre</option><option value="11">Dicembre</option>
+            </select>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openAddExtra()">+ Aggiungi Entrata Extra</button>
+        </div>
+        <p style="font-size:12.5px;color:var(--g500);margin-bottom:12px">
+          💡 Le entrate extra (mance, rimborsi, ecc.) vengono sommate al monte guadagni ma <strong>non contribuiscono alla base imponibile</strong> per il calcolo delle tasse.
+        </p>
+        <div id="cont-extra-list"></div>
       </div>
 
     </div>
@@ -1295,6 +1318,36 @@
     <div class="modal-footer" style="margin-top:20px">
       <button class="btn btn-ghost" onclick="closeModal('modal-cont-settings')">Annulla</button>
       <button class="btn btn-primary" onclick="saveContSettings()">💾 Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     MODAL: Entrata Extra
+═══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-extra">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <h3 class="modal-title" id="extra-modal-title">💶 Nuova Entrata Extra</h3>
+      <button class="modal-close" onclick="closeModal('modal-extra')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Data *</label>
+        <input type="date" class="form-control" id="ex-data">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Importo (€) *</label>
+        <input type="number" class="form-control" id="ex-importo" min="0" step="0.01" placeholder="0.00">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Descrizione</label>
+      <input type="text" class="form-control" id="ex-descrizione" placeholder="Es: Mancia cliente, rimborso spese...">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-extra')">Annulla</button>
+      <button class="btn btn-primary" onclick="saveExtra()">💾 Salva</button>
     </div>
   </div>
 </div>
