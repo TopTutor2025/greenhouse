@@ -1267,15 +1267,23 @@
       <button class="modal-close" onclick="closeModal('modal-cont-settings')">✕</button>
     </div>
 
-    <p style="font-size:13px;color:var(--g500);margin-bottom:18px;line-height:1.6">
-      Inserisci le <strong>aliquote IRPEF / forfettarie</strong> per il calcolo delle tasse stimate.<br>
-      Per un regime forfettario usa un solo scaglione (es. 0 → illimitato, 15%). Per IRPEF inserisci
-      più scaglioni progressivi.
+    <p style="font-size:13px;color:var(--g500);margin-bottom:14px;line-height:1.6">
+      Inserisci le imposte da applicare alla base imponibile netta per stimare le tasse annuali.
+      Ogni riga è un'imposta separata che si applica sull'intera base (o su uno scaglione).<br>
+      <strong>Lascia "A" vuoto</strong> per applicare l'aliquota senza limite superiore.
     </p>
+
+    <!-- Preset rapidi -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+      <span style="font-size:12px;font-weight:600;color:var(--g500);align-self:center">Preset:</span>
+      <button type="button" class="btn btn-outline btn-sm" onclick="contPreset('srls')">🏢 S.r.l.s. (IRES 24% + IRAP 3,9%)</button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="contPreset('forfettario')">👤 Forfettario (15%)</button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="contPreset('irpef')">📊 IRPEF ordinario</button>
+    </div>
 
     <div style="margin-bottom:10px">
       <div style="display:grid;grid-template-columns:1fr 90px 90px 80px 38px;gap:8px;margin-bottom:6px;padding:0 4px">
-        <span style="font-size:11.5px;font-weight:700;color:var(--g400);text-transform:uppercase">Nome scaglione</span>
+        <span style="font-size:11.5px;font-weight:700;color:var(--g400);text-transform:uppercase">Nome imposta</span>
         <span style="font-size:11.5px;font-weight:700;color:var(--g400);text-transform:uppercase;text-align:right">Da (€)</span>
         <span style="font-size:11.5px;font-weight:700;color:var(--g400);text-transform:uppercase;text-align:right">A (€)</span>
         <span style="font-size:11.5px;font-weight:700;color:var(--g400);text-transform:uppercase;text-align:right">%</span>
@@ -1284,7 +1292,7 @@
       <div id="aliquote-rows"></div>
     </div>
 
-    <button class="btn btn-outline btn-sm" onclick="addAliquotaRow()">+ Aggiungi scaglione</button>
+    <button class="btn btn-ghost btn-sm" onclick="addAliquotaRow()">+ Aggiungi riga</button>
 
     <div class="modal-footer" style="margin-top:20px">
       <button class="btn btn-ghost" onclick="closeModal('modal-cont-settings')">Annulla</button>

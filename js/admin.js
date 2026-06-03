@@ -3026,6 +3026,28 @@ function _aliquotaRowHTML(i, sc) {
   </div>`;
 }
 
+function contPreset(tipo) {
+  const presets = {
+    srls: [
+      { nome: 'IRES',  da: 0, a: null, pct: 24  },
+      { nome: 'IRAP',  da: 0, a: null, pct: 3.9 },
+    ],
+    forfettario: [
+      { nome: 'Imposta sostitutiva', da: 0, a: null, pct: 15 },
+    ],
+    irpef: [
+      { nome: '1° scaglione (fino a €28.000)',  da: 0,     a: 28000, pct: 23 },
+      { nome: '2° scaglione (fino a €50.000)',  da: 28000, a: 50000, pct: 25 },
+      { nome: '3° scaglione (fino a €55.000)',  da: 50000, a: 55000, pct: 35 },
+      { nome: '4° scaglione (oltre €55.000)',   da: 55000, a: null,  pct: 43 },
+    ],
+  };
+  if (presets[tipo]) {
+    _contAliquote = presets[tipo].map(r => ({ ...r }));
+    _renderAliquoteRows();
+  }
+}
+
 function addAliquotaRow() {
   const last = _contAliquote[_contAliquote.length - 1];
   const newDa = last ? (last.a != null ? last.a : 0) : 0;
