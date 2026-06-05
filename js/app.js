@@ -332,9 +332,19 @@ const DB = {
     if (error) throw error;
   },
 
-  // ── Impostazioni azienda (always local) ──
-  async getSettings()     { return JSON.parse(localStorage.getItem('gh_settings') || '{}'); },
-  async saveSettings(d)   { localStorage.setItem('gh_settings', JSON.stringify(d)); return d; },
+  // ── Impostazioni azienda (sincronizzate su Supabase) ──
+  async getSettings() {
+    if (USE_LOCAL) return JSON.parse(localStorage.getItem('gh_settings') || '{}');
+    try {
+      const { data } = await sb.from('app_settings').select('data').eq('id', 1).single();
+      return data?.data || {};
+    } catch { return {}; }
+  },
+  async saveSettings(d) {
+    if (USE_LOCAL) { localStorage.setItem('gh_settings', JSON.stringify(d)); return d; }
+    await sb.from('app_settings').upsert({ id: 1, data: d, updated_at: new Date().toISOString() });
+    return d;
+  },
 
   // ── Note Voci Preventivo ──
   async getNoteVoci() {
