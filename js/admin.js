@@ -2713,20 +2713,24 @@ function _renderContMensile(months, annual) {
     return `
     <div class="cont-month-row${isOpen ? ' open' : ''}${!hasActivity ? ' cont-month-empty' : ''}" id="cont-month-${m.idx}">
       <div class="cont-month-head" onclick="contToggleMese(${m.idx})">
-        <div class="cont-month-name">${m.nome}</div>
-        <div class="cont-month-stat">
-          <div class="val">${hasActivity ? '€ '+fmtShort(m.entrate) : '—'}</div>
-          <div class="lbl">Fatturato</div>
+        <div class="cont-month-top">
+          <div class="cont-month-name">${m.nome}</div>
+          <div class="cont-month-chevron">▼</div>
         </div>
-        <div class="cont-month-stat">
-          <div class="val">${hasActivity ? '€ '+fmtShort(m.spese) : '—'}</div>
-          <div class="lbl">Spese</div>
+        <div class="cont-month-stats">
+          <div class="cont-month-stat">
+            <div class="val">${hasActivity ? '€ '+fmtShort(m.entrate) : '—'}</div>
+            <div class="lbl">Fatturato</div>
+          </div>
+          <div class="cont-month-stat">
+            <div class="val">${hasActivity ? '€ '+fmtShort(m.spese) : '—'}</div>
+            <div class="lbl">Spese</div>
+          </div>
+          <div class="cont-month-stat">
+            <div class="val ${saldo >= 0 ? 'positive' : 'negative'}">${hasActivity ? '€ '+fmtShort(saldo) : '—'}</div>
+            <div class="lbl">Saldo</div>
+          </div>
         </div>
-        <div class="cont-month-stat">
-          <div class="val ${saldo >= 0 ? 'positive' : 'negative'}">${hasActivity ? '€ '+fmtShort(saldo) : '—'}</div>
-          <div class="lbl">Saldo</div>
-        </div>
-        <div class="cont-month-chevron">▼</div>
       </div>
       <div class="cont-month-body">
         <div class="cont-month-detail-grid">
@@ -2818,25 +2822,25 @@ function renderContSpese() {
     const dataFmt     = s.data ? new Date(s.data + 'T12:00:00').toLocaleDateString('it-IT') : '—';
     return `
     <div class="cont-spesa-row">
-      <span style="color:var(--g500);font-size:13px">${dataFmt}</span>
-      <div>
-        <div style="font-weight:600;font-size:13.5px">${escHtml(s.descrizione)}</div>
+      <span class="cont-spesa-data">${dataFmt}</span>
+      <div class="cont-spesa-desc">
+        <div class="cont-spesa-desc-name">${escHtml(s.descrizione)}</div>
         <span class="cont-spesa-cat">${escHtml(s.categoria)}</span>
       </div>
-      <div style="text-align:right">
-        <div style="font-weight:700;font-size:14px">${fmt(+(s.importo||0))}</div>
-        ${+(s.iva_importo||0) > 0 ? `<div style="font-size:11px;color:var(--g500)">IVA: ${fmt(+(s.iva_importo||0))}</div>` : ''}
+      <div class="cont-spesa-amount">
+        <div>${fmt(+(s.importo||0))}</div>
+        ${+(s.iva_importo||0) > 0 ? `<div class="cont-spesa-sub">IVA: ${fmt(+(s.iva_importo||0))}</div>` : ''}
       </div>
-      <div style="text-align:right">
-        <div style="font-size:12px;color:var(--g600)">Ded. ${s.deducibilita_pct}%</div>
-        <div style="font-size:12px;font-weight:600;color:var(--success)">${fmt(deducibile)}</div>
-        ${+(s.iva_importo||0) > 0 ? `<div style="font-size:11px;color:var(--info)">IVA rec. ${fmt(ivaRec)}</div>` : ''}
+      <div class="cont-spesa-ded">
+        <div class="cont-spesa-sub">Ded. ${s.deducibilita_pct}%</div>
+        <div class="cont-spesa-ded-val">${fmt(deducibile)}</div>
+        ${+(s.iva_importo||0) > 0 ? `<div class="cont-spesa-sub" style="color:var(--info)">IVA rec. ${fmt(ivaRec)}</div>` : ''}
       </div>
       <div class="cont-spesa-icons">
         ${s.note ? `<button class="cont-spesa-icon-btn" title="${escHtml(s.note)}" onclick="alert('${escHtml(s.note).replace(/'/g,"\\'")}')">📝</button>` : ''}
         ${s.allegato_path ? `<button class="cont-spesa-icon-btn" title="Visualizza allegato" onclick="viewAllegato('${s.id}','${escHtml(s.allegato_name||'')}','${escHtml(s.allegato_type||'')}')">📎</button>` : ''}
       </div>
-      <div style="display:flex;gap:5px">
+      <div class="cont-spesa-actions">
         <button class="btn btn-sm btn-outline" onclick="openEditSpesa('${s.id}')">✏️</button>
         <button class="btn btn-sm btn-danger-outline" onclick="confirmDeleteSpesa('${s.id}','${escHtml(s.descrizione)}')">🗑️</button>
       </div>
@@ -2992,11 +2996,11 @@ function renderContExtra() {
   const rows = list.map(e => {
     const dataFmt = e.data ? new Date(e.data + 'T12:00:00').toLocaleDateString('it-IT') : '—';
     return `
-    <div class="cont-spesa-row" style="grid-template-columns:90px 1fr 120px auto">
-      <span style="color:var(--g500);font-size:13px">${dataFmt}</span>
-      <span style="font-weight:600;font-size:13.5px">${escHtml(e.descrizione || '—')}</span>
-      <div style="text-align:right;font-weight:700;font-size:14px;color:var(--info)">${fmt(+(e.importo||0))}</div>
-      <div style="display:flex;gap:5px">
+    <div class="cont-extra-row">
+      <span class="cont-spesa-data">${dataFmt}</span>
+      <span class="cont-extra-desc">${escHtml(e.descrizione || '—')}</span>
+      <div class="cont-extra-amount">${fmt(+(e.importo||0))}</div>
+      <div class="cont-spesa-actions">
         <button class="btn btn-sm btn-outline" onclick="openEditExtra('${e.id}')">✏️</button>
         <button class="btn btn-sm btn-danger-outline" onclick="confirmDeleteExtra('${e.id}','${escHtml(e.descrizione||'')}')">🗑️</button>
       </div>

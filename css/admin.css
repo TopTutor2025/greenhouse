@@ -768,21 +768,24 @@
   box-shadow: var(--sh-sm); overflow: hidden;
 }
 .cont-month-head {
-  display: grid;
-  grid-template-columns: 140px 1fr 1fr 1fr auto;
-  align-items: center;
+  display: flex; align-items: center; gap: 8px 16px;
   padding: 14px 18px; cursor: pointer;
-  transition: background .15s; gap: 12px;
-  user-select: none;
+  transition: background .15s;
+  user-select: none; flex-wrap: nowrap;
 }
 .cont-month-head:hover { background: var(--g50); }
+.cont-month-top {
+  display: flex; align-items: center; gap: 10px;
+  min-width: 150px; flex-shrink: 0;
+}
 .cont-month-name { font-weight: 700; font-size: 14px; color: var(--g800); text-transform: capitalize; }
-.cont-month-stat { text-align: right; }
+.cont-month-stats { display: flex; gap: 8px 20px; flex: 1; justify-content: flex-end; }
+.cont-month-stat { text-align: right; min-width: 70px; }
 .cont-month-stat .val { font-size: 14px; font-weight: 600; color: var(--g800); }
 .cont-month-stat .lbl { font-size: 11px; color: var(--g400); margin-top: 1px; }
 .cont-month-stat .val.positive { color: var(--success); }
 .cont-month-stat .val.negative { color: var(--danger); }
-.cont-month-chevron { font-size: 13px; color: var(--g400); transition: transform .2s; }
+.cont-month-chevron { font-size: 13px; color: var(--g400); transition: transform .2s; margin-left: auto; flex-shrink: 0; }
 .cont-month-row.open .cont-month-chevron { transform: rotate(180deg); }
 .cont-month-empty { opacity: .45; }
 
@@ -825,26 +828,53 @@
 /* Spese table */
 .cont-spesa-row {
   display: grid;
-  grid-template-columns: 90px 1fr 120px 110px 60px 60px auto;
+  grid-template-columns: 90px 1fr 110px 120px 50px auto;
   align-items: center; gap: 10px;
   padding: 12px 14px;
   background: #fff; border: 1px solid var(--g100);
   border-radius: var(--r-sm); margin-bottom: 6px;
   font-size: 13.5px; box-shadow: var(--sh-sm);
 }
+
+/* Semantic classes for spese rows */
+.cont-spesa-data {
+  font-size: 12.5px; color: var(--g500);
+  white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.cont-spesa-desc { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.cont-spesa-desc-name { font-weight: 600; color: var(--g800); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cont-spesa-cat {
   font-size: 11px; font-weight: 600; color: var(--g500);
   background: var(--g100); border-radius: 20px;
   padding: 2px 8px; white-space: nowrap; overflow: hidden;
-  text-overflow: ellipsis; max-width: 110px;
+  text-overflow: ellipsis; align-self: flex-start; max-width: 100%;
 }
-.cont-spesa-icons { display: flex; gap: 4px; align-items: center; }
+.cont-spesa-amount { display: flex; flex-direction: column; gap: 2px; text-align: right; }
+.cont-spesa-amount > div:first-child { font-weight: 600; color: var(--g800); }
+.cont-spesa-sub { font-size: 11.5px; color: var(--g500); }
+.cont-spesa-ded { display: flex; flex-direction: column; gap: 2px; text-align: right; }
+.cont-spesa-ded-val { font-weight: 700; color: var(--success); font-size: 13px; }
+.cont-spesa-icons { display: flex; gap: 4px; align-items: center; justify-content: center; }
 .cont-spesa-icon-btn {
   background: none; border: none; cursor: pointer;
   font-size: 14px; padding: 3px 4px; border-radius: 5px;
   line-height: 1; transition: background .15s;
 }
 .cont-spesa-icon-btn:hover { background: var(--g100); }
+.cont-spesa-actions { display: flex; gap: 4px; align-items: center; }
+
+/* Extra row */
+.cont-extra-row {
+  display: grid;
+  grid-template-columns: 90px 1fr 110px auto;
+  align-items: center; gap: 10px;
+  padding: 12px 14px;
+  background: #fff; border: 1px solid var(--g100);
+  border-radius: var(--r-sm); margin-bottom: 6px;
+  font-size: 13.5px; box-shadow: var(--sh-sm);
+}
+.cont-extra-desc { color: var(--g700); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.cont-extra-amount { font-weight: 700; color: var(--success); text-align: right; white-space: nowrap; }
 
 /* Modal impostazioni fiscali */
 .aliquota-row {
@@ -876,19 +906,81 @@
   line-height: 1; padding: 0 2px;
 }
 
+/* ── Contabilità responsive ─────────────────────── */
 @media (max-width: 900px) {
   .cont-kpi-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
-  .cont-month-head { grid-template-columns: 1fr 1fr 1fr auto; }
-  .cont-month-name { grid-column: 1 / -1; margin-bottom: 4px; }
+  .cont-month-stats { gap: 6px 14px; }
+  .cont-month-stat { min-width: 60px; }
+  .cont-spesa-row { grid-template-columns: 80px 1fr 100px 105px 44px auto; gap: 8px; }
+  .cont-extra-row { grid-template-columns: 80px 1fr 100px auto; }
 }
+
 @media (max-width: 600px) {
-  .cont-kpi-grid { grid-template-columns: 1fr 1fr; }
-  .cont-month-head { grid-template-columns: 1fr 1fr auto; }
-  .cont-month-detail-grid { grid-template-columns: 1fr; }
-  .cont-spesa-row {
-    grid-template-columns: 1fr auto;
-    grid-template-rows: auto auto;
-  }
-  .aliquota-row { grid-template-columns: 1fr 70px 70px 65px auto; gap: 5px; }
+  /* KPI grid: 2 colonne su mobile */
+  .cont-kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .cont-kpi-value { font-size: 18px; }
+
+  /* Header azioni su riga separata */
+  .cont-header { flex-direction: column; align-items: flex-start; }
   .cont-header-actions { width: 100%; flex-wrap: wrap; }
+
+  /* Tabs scrollabili */
+  .cont-tabs { overflow-x: auto; padding-bottom: 3px; gap: 0; }
+  .cont-tab { padding: 9px 13px; font-size: 13px; white-space: nowrap; flex-shrink: 0; }
+
+  /* Accordion mensile: wrap su 2 righe */
+  .cont-month-head { flex-wrap: wrap; padding: 12px 14px; gap: 4px 0; }
+  .cont-month-top { min-width: 100%; justify-content: space-between; }
+  .cont-month-stats { width: 100%; justify-content: flex-start; gap: 6px 16px; }
+  .cont-month-stat { min-width: 70px; text-align: left; }
+  .cont-month-detail-grid { grid-template-columns: 1fr; }
+
+  /* Topbar spese */
+  .cont-spese-topbar { flex-direction: column; align-items: flex-start; }
+  .cont-spese-filters { width: 100%; }
+  .cont-spese-filters select.form-control { flex: 1; min-width: 0; }
+
+  /* ── Spese card mobile (grid areas) ── */
+  .cont-spesa-row {
+    display: grid;
+    grid-template-areas:
+      "data    actions"
+      "desc    desc"
+      "amount  icons"
+      "ded     ded";
+    grid-template-columns: 1fr auto;
+    gap: 5px 8px;
+    padding: 12px;
+  }
+  .cont-spesa-data    { grid-area: data; font-size: 12px; }
+  .cont-spesa-desc    { grid-area: desc; }
+  .cont-spesa-amount  {
+    grid-area: amount; text-align: left;
+    flex-direction: row; flex-wrap: wrap; gap: 0 8px; align-items: baseline;
+  }
+  .cont-spesa-ded     {
+    grid-area: ded; text-align: left;
+    flex-direction: row; flex-wrap: wrap; gap: 0 8px; align-items: baseline;
+    border-top: 1px dashed var(--g200); padding-top: 4px;
+  }
+  .cont-spesa-icons   { grid-area: icons; justify-content: flex-end; align-items: flex-start; padding-top: 2px; }
+  .cont-spesa-actions { grid-area: actions; }
+
+  /* ── Entrate Extra card mobile ── */
+  .cont-extra-row {
+    display: grid;
+    grid-template-areas:
+      "data    actions"
+      "desc    amount";
+    grid-template-columns: 1fr auto;
+    gap: 5px 8px;
+    padding: 11px 12px;
+  }
+  .cont-extra-row .cont-spesa-data    { grid-area: data; font-size: 12px; }
+  .cont-extra-row .cont-spesa-actions { grid-area: actions; }
+  .cont-extra-desc                    { grid-area: desc; white-space: normal; }
+  .cont-extra-amount                  { grid-area: amount; text-align: right; }
+
+  /* Aliquote modal */
+  .aliquota-row { grid-template-columns: 1fr 65px 65px 60px auto; gap: 5px; }
 }
