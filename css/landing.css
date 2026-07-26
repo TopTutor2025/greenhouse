@@ -89,6 +89,7 @@ body {
 .nav-logo-text { font-size: 19px; font-weight: 700; color: var(--gh-ink); letter-spacing: -.01em; }
 .nav-logo-text span { color: var(--primary-d); }
 .nav-links { display: flex; align-items: center; gap: 30px; font-size: 14px; font-weight: 500; color: var(--gh-ink-70); }
+.nav-links a { color: inherit; text-decoration: none; }
 .nav-links a:hover { color: var(--primary-d); }
 .nav-icon-btn {
   display: flex; align-items: center; justify-content: center;
