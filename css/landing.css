@@ -159,12 +159,12 @@ body {
 /* ─── SECTION SHELL ─── */
 .gh-section { padding: 96px 44px; }
 .gh-section-white { background: var(--gh-panel); }
-.gh-container { max-width: 1180px; margin: 0 auto; }
+.gh-container { width: 100%; }
 
 /* ─── STATS BAND ─── */
 .gh-stats-head { display: grid; grid-template-columns: 1.1fr 1fr; gap: 64px; align-items: end; }
 .gh-stats-head .gh-h2 { font-size: clamp(28px, 3.4vw, 46px); }
-.gh-stats-grid { max-width: 1180px; margin: 72px auto 0; display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; }
+.gh-stats-grid { width: 100%; margin: 72px auto 0; display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; }
 .gh-stat { border-top: 2px solid var(--primary); padding-top: 24px; }
 .gh-stat-value { font-size: clamp(46px, 6vw, 80px); font-weight: 700; letter-spacing: -.03em; line-height: 1; }
 .gh-stat-label { margin-top: 12px; font-size: 14px; font-weight: 600; color: rgba(26,31,27,.9); }
@@ -260,7 +260,7 @@ body {
 
 /* ─── FOOTER ─── */
 .footer { background: var(--gh-footer); color: var(--gh-ink-55); padding: 64px 44px 40px; }
-.footer-inner { max-width: 1180px; margin: 0 auto; }
+.footer-inner { width: 100%; }
 .footer-top { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 44px; }
 .footer-brand .nav-logo-text { color: var(--gh-ink); }
 .footer-brand p { font-size: 14px; margin-top: 12px; line-height: 1.6; max-width: 280px; color: var(--gh-ink-55); }
